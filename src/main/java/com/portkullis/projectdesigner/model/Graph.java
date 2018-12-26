@@ -100,6 +100,7 @@ public class Graph<T> {
 
         while (keepSearching) {
             simplifySimilarDummyNodes();
+            collapseDummiesThatAreOnlyExitFromNodes();
 
             Optional<Edge<T>> unnecessaryDummy = getUnnecessaryDummies().findFirst();
 
@@ -357,4 +358,16 @@ public class Graph<T> {
         }
     }
 
+    void collapseDummiesThatAreOnlyExitFromNodes() {
+        for (Node node : nodes) {
+            Set<Edge<T>> nodeEdges = edges.stream().filter(e -> e.getStart().equals(node)).collect(toSet());
+            if (nodeEdges.size() == 1) {
+                nodeEdges.forEach(e -> {
+                    if (e.getData() == null) {
+                        collapseEdge(e);
+                    }
+                });
+            }
+        }
+    }
 }
