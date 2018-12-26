@@ -18,11 +18,10 @@ public class Node {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Node{");
-        sb.append("id=").append(id);
-        sb.append(", label='").append(label).append('\'');
-        sb.append('}');
-        return sb.toString();
+        return "Node{" +
+                "id=" + id +
+                ", label='" + label + '\'' +
+                '}';
     }
 
     @Override
@@ -30,13 +29,12 @@ public class Node {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Node node = (Node) o;
-        return id == node.id &&
-                Objects.equals(label, node.label);
+        return id == node.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, label);
+        return Objects.hash(id);
     }
 
     public long getId() {

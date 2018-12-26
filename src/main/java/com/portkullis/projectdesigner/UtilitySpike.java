@@ -5,8 +5,10 @@ import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
 import com.portkullis.projectdesigner.model.*;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 public class UtilitySpike {
 
@@ -40,8 +42,6 @@ public class UtilitySpike {
         Graph<Activity> graph = new Graph();
         Date timerStart = new Date();
         try {
-            System.out.println(utilityData);
-
             long nodeId = 0;
             long edgeId = 0;
 
@@ -71,30 +71,147 @@ public class UtilitySpike {
                 }
             }
 
-            findAndDeleteRedundantDummies(graph);
-            collapseUnnecessaryDummies(graph);
-//            collapseEdge(graph, getEdge(graph, 1, 3));
-//            collapseEdge(graph, getEdge(graph, 4, 5));
-//            collapseEdge(graph, getEdge(graph, 6, 7));
-//            collapseEdge(graph, getEdge(graph, 8, 9));
-//            collapseEdge(graph, getEdge(graph, 8, 15));
-//            collapseEdge(graph, getEdge(graph, 8, 13));
-//            collapseEdge(graph, getEdge(graph, 8, 17));
-//            collapseEdge(graph, getEdge(graph, 8, 18));
-//            collapseEdge(graph, getEdge(graph, 8, 19));
-
-            int pathCount = countPaths(graph, start, end);
-            System.out.println(pathCount + " paths from start to end");
+            collapseUnnecessaryDummiesTest(graph);
         } finally {
             Date timerStop = new Date();
             System.out.println("Graph calculated in " + (timerStop.getTime() - timerStart.getTime()) + "ms");
+
+            Set<Node> starts = getStartNodes(graph);
+            Set<Node> ends = getEndNode(graph);
+
+            System.out.println("Graph has " + starts.size() + " starts and " + ends.size() + " ends.");
+            if (starts.size() == 1 && ends.size() == 1) {
+                Node s = starts.stream().findFirst().get();
+                Node e = ends.stream().findFirst().get();
+
+                s.setLabel("Start");
+                e.setLabel("End");
+
+                System.out.println("Starting node: " + s);
+                System.out.println("Ending node: " + e);
+
+                Set<List<Edge<Activity>>> allDistinctPaths = getAllDistinctPaths(graph, s, e);
+                System.out.println(allDistinctPaths.size() + " distinct paths through project network");
+            }
         }
 
         visualizationEngine.visualizeGraph(graph);
     }
 
-    private static <T> Edge<T> getEdge(Graph<T> graph, long nodeA, long nodeB) {
-        return graph.getEdges().stream().filter(e -> e.getStart().getId() == nodeA && e.getEnd().getId() == nodeB).findFirst().get();
+    private static void collapseUnnecessaryDummiesTest(Graph<Activity> graph) {
+        boolean keepSearching = true;
+        findAndDeleteRedundantDummies(graph);
+
+        while (keepSearching) {
+            Optional<Edge<Activity>> unnecessaryDummy = getUnnecessaryDummies(graph).findFirst();
+
+            if (unnecessaryDummy.isPresent()) {
+                collapseEdge(graph, unnecessaryDummy.get());
+            } else {
+                keepSearching = false;
+            }
+
+            findAndDeleteRedundantDummies(graph);
+        }
+    }
+
+    private static <T> Set<Long> getNodesThatAreConnectedTo(Graph<T> graph, Node node) {
+        Set<Long> connected = graph.getEdges().stream()
+                .filter(e -> e.getEnd().getId() == node.getId())
+                .map(e -> e.getStart().getId())
+                .collect(toSet());
+        connected.addAll(graph.getEdges().stream()
+                .filter(e -> e.getStart().getId() == node.getId())
+                .map(e -> e.getEnd().getId())
+                .collect(toSet()));
+
+        return connected;
+    }
+
+    private static <T> Stream<Edge<T>> getUnnecessaryDummies(Graph<T> graph) {
+        return graph.getEdges().stream()
+                // Only dummy edges can be collapsed
+                .filter(UtilitySpike::isDummyActivity)
+                // Triangles can not be collapsed
+                .filter(e -> isNotTriangleActivity(graph, e))
+                // Edges can not be collapsed if the starting node has non-dummy edges leaving it and the end node has different prerequisite non-dummy activities
+                .filter(e -> endDoesNotHaveAdditionalPrerequisites(graph, e))
+                ;
+    }
+
+    private static <T> boolean endDoesNotHaveAdditionalPrerequisites(Graph<T> graph, Edge<T> e) {
+        boolean allowed = true;
+        if (graph.getEdges().stream()
+                .filter(x -> x.getStart().getId() == e.getStart().getId())
+                .count() > 1) {
+            Set<Long> startPrerequisites = getPrerequisiteActivities(graph, e.getStart());
+            Set<Long> endPrerequisites = getPrerequisiteActivities(graph, e.getEnd());
+
+            endPrerequisites.removeAll(startPrerequisites);
+
+            allowed = endPrerequisites.isEmpty();
+        }
+        return allowed;
+    }
+
+    private static <T> boolean isNotTriangleActivity(Graph<T> graph, Edge<T> e) {
+        return Collections.disjoint(getNodesThatAreConnectedTo(graph, e.getStart()), getNodesThatAreConnectedTo(graph, e.getEnd()));
+    }
+
+    private static boolean isDummyActivity(Edge<?> e) {
+        return e.getData() == null;
+    }
+
+    private static <T> Set<Long> getPrerequisiteActivities(Graph<T> graph, Node end) {
+        Set<Node> startNodes = getStartNodes(graph);
+
+        if (startNodes.size() == 0) {
+            throw new RuntimeException("Could not find starting node for graph.");
+        }
+
+        if (startNodes.size() > 1) {
+            throw new RuntimeException("Multiple start nodes found for graph.");
+        }
+
+        return getAllDistinctPaths(graph, startNodes.stream().findFirst().get(), end).stream()
+                .flatMap(List::stream)
+                .filter(e -> e.getData() != null)
+                .map(Edge::getId)
+                .collect(toSet());
+    }
+
+    private static <T> Set<List<Edge<T>>> getAllDistinctPaths(Graph<T> graph, Node start, Node end) {
+        return getAllDistinctPaths(graph, new ArrayList<>(), start, end);
+    }
+
+    private static <T> Set<List<Edge<T>>> getAllDistinctPaths(Graph<T> graph, List<Edge<T>> basePath, Node start, Node end) {
+        if (!graph.getNodes().contains(start)) {
+            throw new RuntimeException("Graph does not contain starting node: " + start);
+        }
+        if (!graph.getNodes().contains(end)) {
+            throw new RuntimeException("Graph does not contain ending node: " + end);
+        }
+
+        Set<List<Edge<T>>> results = new HashSet<>();
+
+        if (!start.equals(end)) {
+            Set<Edge<T>> nextEdges = graph.getEdges().stream()
+                    .filter(e -> e.getStart().equals(start))
+                    .collect(toSet());
+
+            for (Edge<T> nextEdge : nextEdges) {
+                List<Edge<T>> newBasePath = new ArrayList<>(basePath);
+                newBasePath.add(nextEdge);
+                if (nextEdge.getEnd().equals(end)) {
+                    results.add(newBasePath);
+                } else {
+                    results.addAll(getAllDistinctPaths(graph, newBasePath, nextEdge.getEnd(), end));
+                }
+            }
+
+        }
+
+        return results;
     }
 
     private static void findAndDeleteRedundantDummies(Graph<Activity> graph) {
@@ -107,23 +224,26 @@ public class UtilitySpike {
         }
     }
 
-    private static int countPaths(Graph<Activity> graph, Node start, Node end) {
-        int count = 0;
-        Collection<Edge> edges = getEdgesThatStartWith(start, graph);
-
-        for (Edge edge : edges) {
-            if (edge.getEnd().equals(end)) {
-                count++;
-            } else {
-                count += countPaths(graph, edge.getEnd(), end);
-            }
-        }
-
-        return count;
+    private static <T> int countPaths(Graph<T> graph, Node start, Node end) {
+        return getAllDistinctPaths(graph, start, end).size();
     }
 
-    private static Collection<Edge> getEdgesThatStartWith(Node start, Graph<Activity> graph) {
-        return graph.getEdges().stream().filter(e -> e.getStart().equals(start)).collect(toList());
+    private static <T> Set<Node> getStartNodes(Graph<T> graph) {
+        Set<Long> nodes = graph.getEdges().stream()
+                .map(e -> e.getEnd().getId())
+                .collect(toSet());
+        return graph.getNodes().stream()
+                .filter(n -> !nodes.contains(n.getId()))
+                .collect(toSet());
+    }
+
+    private static Set<Node> getEndNode(Graph<?> graph) {
+        Set<Long> nodes = graph.getEdges().stream()
+                .map(e -> e.getStart().getId())
+                .collect(toSet());
+        return graph.getNodes().stream()
+                .filter(n -> !nodes.contains(n.getId()))
+                .collect(toSet());
     }
 
     private static Activity addActivity(List<Activity> utilityData, Activity activity) {
@@ -131,31 +251,14 @@ public class UtilitySpike {
         return activity;
     }
 
-    private static <T> void collapseUnnecessaryDummies(Graph<T> graph) {
-        boolean pruning = true;
-
-        while (pruning) {
-            pruning = false;
-            List<Edge<T>> dummies = graph.getEdges().stream().filter(e -> e.getData() == null).collect(toList());
-
-            for (Edge<T> dummy : dummies) {
-//                long startInputs = graph.getEdges().stream().filter(e -> e.getEnd().equals(dummy.getStart())).count();
-                long endInputs = graph.getEdges().stream().filter(e -> e.getEnd().equals(dummy.getEnd())).count();
-                long endOutputs = graph.getEdges().stream().filter(e -> e.getStart().equals(dummy.getEnd())).count();
-
-                if ((endInputs <= 1) && (endOutputs <= 1)) {
-                    System.out.println("Collapsing edge from " + dummy.getStart().getLabel() + " to " + dummy.getEnd().getLabel());
-                    pruning = collapseEdge(graph, dummy);
-                    break;
-                }
-            }
-        }
-    }
-
     private static <T> boolean collapseEdge(Graph<T> graph, Edge<T> edge) {
         boolean edgeCollapsed = graph.getEdges().removeIf(e -> e.getId() == edge.getId());
 
         if (edgeCollapsed) {
+            if (graph.getEdges().stream().filter(e -> e.getId() == edge.getId()).count() > 0) {
+                throw new RuntimeException("Edge wasn't really removed: " + edge);
+            }
+
             Node a = edge.getStart();
             Node b = edge.getEnd();
 
@@ -167,9 +270,13 @@ public class UtilitySpike {
                     e.setEnd(a);
                 }
             }
-
-            graph.getNodes().remove(b);
         }
+
+        graph.getNodes().clear();
+        graph.getNodes().addAll(graph.getEdges().stream()
+                .flatMap(e -> Stream.of(e.getStart(), e.getEnd()))
+                .collect(toSet())
+        );
 
         return edgeCollapsed;
     }

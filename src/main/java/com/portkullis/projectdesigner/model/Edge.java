@@ -40,15 +40,12 @@ public class Edge<T> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Edge<?> edge = (Edge<?>) o;
-        return id == edge.id &&
-                Objects.equals(start, edge.start) &&
-                Objects.equals(end, edge.end) &&
-                Objects.equals(data, edge.data);
+        return id == edge.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, start, end, data);
+        return Objects.hash(id);
     }
 
     public long getId() {
