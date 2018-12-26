@@ -5,10 +5,8 @@ import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
 import com.portkullis.projectdesigner.model.*;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toSet;
 
 public class UtilitySpike {
 
@@ -71,7 +69,7 @@ public class UtilitySpike {
                 }
             }
 
-            collapseUnnecessaryDummies(graph);
+            graph.simplifyDummies();
         } finally {
             Date timerStop = new Date();
             System.out.println("Graph calculated in " + (timerStop.getTime() - timerStart.getTime()) + "ms");
@@ -90,7 +88,7 @@ public class UtilitySpike {
                 System.out.println("Starting node: " + s);
                 System.out.println("Ending node: " + e);
 
-                Set<List<Edge<Activity>>> allDistinctPaths = getAllDistinctPaths(graph, s, e);
+                Set<List<Edge<Activity>>> allDistinctPaths = graph.getAllDistinctPaths(s, e);
                 System.out.println(allDistinctPaths.size() + " distinct paths through project network");
 
                 System.out.println("Total nodes: " + graph.getNodes().size());
@@ -101,194 +99,6 @@ public class UtilitySpike {
         }
 
         visualizationEngine.visualizeGraph(graph);
-    }
-
-    private static void collapseUnnecessaryDummies(Graph<Activity> graph) {
-        boolean keepSearching = true;
-
-        findAndDeleteRedundantDummies(graph);
-        mergeNodesWithIdenticalPrerequisites(graph);
-
-        while (keepSearching) {
-            Optional<Edge<Activity>> unnecessaryDummy = getUnnecessaryDummies(graph).findFirst();
-
-            if (unnecessaryDummy.isPresent()) {
-                collapseEdge(graph, unnecessaryDummy.get());
-            } else {
-                keepSearching = false;
-            }
-        }
-    }
-
-    private static <T> void mergeNodesWithIdenticalPrerequisites(Graph<T> graph) {
-        Map<Node, Set<Long>> nodePrerequisites = graph.getNodes().stream()
-                .collect(toMap(Function.identity(), n -> getPrerequisiteActivities(graph, n)));
-
-        nodePrerequisites.forEach((k, v) -> {
-            System.out.println("Node " + k.getLabel() + " => " + v);
-        });
-
-        List<Node> nodes = graph.getNodes().stream().sorted().collect(toList());
-
-        while (nodes.size() > 1) {
-            Node node = nodes.remove(0);
-
-            for (Node compare : nodes) {
-                if (nodePrerequisites.get(node).equals(nodePrerequisites.get(compare))) {
-                    System.out.println("Merging node " + node + " into node " + compare + "...");
-                    mergeNodes(graph, node, compare);
-                }
-            }
-        }
-    }
-
-    private static <T> void mergeNodes(Graph<T> graph, Node node, Node target) {
-        List<Edge> edgesToRemove = new ArrayList<>();
-
-        Map<Node, Set<Node>> updatedEdges = new HashMap<>();
-
-        graph.getEdges().forEach(edge -> {
-            if (edge.getStart().equals(node)) {
-                edge.setStart(target);
-            }
-            if (edge.getEnd().equals(node)) {
-                edge.setEnd(target);
-            }
-
-            if (!updatedEdges.containsKey(edge.getStart())) {
-                updatedEdges.put(edge.getStart(), new HashSet<>());
-            }
-            if (!updatedEdges.get(edge.getStart()).contains(edge.getEnd())) {
-                updatedEdges.get(edge.getStart()).add(edge.getEnd());
-
-                if (edge.getStart().equals(edge.getEnd())) {
-                    edgesToRemove.add(edge);
-                }
-            } else {
-                edgesToRemove.add(edge);
-            }
-        });
-
-        graph.getEdges().removeAll(edgesToRemove);
-
-        graph.getNodes().clear();
-        graph.getNodes().addAll(graph.getEdges().stream()
-                .flatMap(e -> Stream.of(e.getStart(), e.getEnd()))
-                .collect(toSet())
-        );
-    }
-
-    private static <T> Set<Long> getNodesThatAreConnectedTo(Graph<T> graph, Node node) {
-        Set<Long> connected = graph.getEdges().stream()
-                .filter(e -> e.getEnd().getId() == node.getId())
-                .map(e -> e.getStart().getId())
-                .collect(toSet());
-        connected.addAll(graph.getEdges().stream()
-                .filter(e -> e.getStart().getId() == node.getId())
-                .map(e -> e.getEnd().getId())
-                .collect(toSet()));
-
-        return connected;
-    }
-
-    private static <T> Stream<Edge<T>> getUnnecessaryDummies(Graph<T> graph) {
-        return graph.getEdges().stream()
-                // Only dummy edges can be collapsed
-                .filter(UtilitySpike::isDummyActivity)
-                // Triangles can not be collapsed
-                .filter(e -> isNotTriangleActivity(graph, e))
-                // Edges can not be collapsed if the starting node has non-dummy edges leaving it and the end node has different prerequisite non-dummy activities
-                .filter(e -> endDoesNotHaveAdditionalPrerequisites(graph, e))
-                ;
-    }
-
-    private static <T> boolean endDoesNotHaveAdditionalPrerequisites(Graph<T> graph, Edge<T> e) {
-        boolean allowed = true;
-        if (graph.getEdges().stream()
-                .filter(x -> x.getStart().getId() == e.getStart().getId())
-                .count() > 1) {
-            Set<Long> startPrerequisites = getPrerequisiteActivities(graph, e.getStart());
-            Set<Long> endPrerequisites = getPrerequisiteActivities(graph, e.getEnd());
-
-            endPrerequisites.removeAll(startPrerequisites);
-
-            allowed = endPrerequisites.isEmpty();
-        }
-        return allowed;
-    }
-
-    private static <T> boolean isNotTriangleActivity(Graph<T> graph, Edge<T> e) {
-        return Collections.disjoint(getNodesThatAreConnectedTo(graph, e.getStart()), getNodesThatAreConnectedTo(graph, e.getEnd()));
-    }
-
-    private static boolean isDummyActivity(Edge<?> e) {
-        return e.getData() == null;
-    }
-
-    private static <T> Set<Long> getPrerequisiteActivities(Graph<T> graph, Node end) {
-        Set<Node> startNodes = getStartNodes(graph);
-
-        if (startNodes.size() == 0) {
-            throw new RuntimeException("Could not find starting node for graph.");
-        }
-
-        if (startNodes.size() > 1) {
-            throw new RuntimeException("Multiple start nodes found for graph.");
-        }
-
-        return getAllDistinctPaths(graph, startNodes.stream().findFirst().get(), end).stream()
-                .flatMap(List::stream)
-                .filter(e -> e.getData() != null)
-                .map(Edge::getId)
-                .collect(toSet());
-    }
-
-    private static <T> Set<List<Edge<T>>> getAllDistinctPaths(Graph<T> graph, Node start, Node end) {
-        return getAllDistinctPaths(graph, new ArrayList<>(), start, end);
-    }
-
-    private static <T> Set<List<Edge<T>>> getAllDistinctPaths(Graph<T> graph, List<Edge<T>> basePath, Node start, Node end) {
-        if (!graph.getNodes().contains(start)) {
-            throw new RuntimeException("Graph does not contain starting node: " + start);
-        }
-        if (!graph.getNodes().contains(end)) {
-            throw new RuntimeException("Graph does not contain ending node: " + end);
-        }
-
-        Set<List<Edge<T>>> results = new HashSet<>();
-
-        if (!start.equals(end)) {
-            Set<Edge<T>> nextEdges = graph.getEdges().stream()
-                    .filter(e -> e.getStart().equals(start))
-                    .collect(toSet());
-
-            for (Edge<T> nextEdge : nextEdges) {
-                List<Edge<T>> newBasePath = new ArrayList<>(basePath);
-                newBasePath.add(nextEdge);
-                if (nextEdge.getEnd().equals(end)) {
-                    results.add(newBasePath);
-                } else {
-                    results.addAll(getAllDistinctPaths(graph, newBasePath, nextEdge.getEnd(), end));
-                }
-            }
-
-        }
-
-        return results;
-    }
-
-    private static void findAndDeleteRedundantDummies(Graph<Activity> graph) {
-        List<Edge> dummies = graph.getEdges().stream().filter(e -> e.getData() == null).collect(toList());
-
-        for (Edge dummy : dummies) {
-            if (countPaths(graph, dummy.getStart(), dummy.getEnd()) > 1) {
-                graph.getEdges().remove(dummy);
-            }
-        }
-    }
-
-    private static <T> int countPaths(Graph<T> graph, Node start, Node end) {
-        return getAllDistinctPaths(graph, start, end).size();
     }
 
     private static <T> Set<Node> getStartNodes(Graph<T> graph) {
@@ -312,36 +122,6 @@ public class UtilitySpike {
     private static Activity addActivity(List<Activity> utilityData, Activity activity) {
         utilityData.add(activity);
         return activity;
-    }
-
-    private static <T> boolean collapseEdge(Graph<T> graph, Edge<T> edge) {
-        boolean edgeCollapsed = graph.getEdges().removeIf(e -> e.getId() == edge.getId());
-
-        if (edgeCollapsed) {
-            if (graph.getEdges().stream().filter(e -> e.getId() == edge.getId()).count() > 0) {
-                throw new RuntimeException("Edge wasn't really removed: " + edge);
-            }
-
-            Node a = edge.getStart();
-            Node b = edge.getEnd();
-
-            for (Edge<T> e : graph.getEdges()) {
-                if (e.getStart().equals(b)) {
-                    e.setStart(a);
-                }
-                if (e.getEnd().equals(b)) {
-                    e.setEnd(a);
-                }
-            }
-        }
-
-        graph.getNodes().clear();
-        graph.getNodes().addAll(graph.getEdges().stream()
-                .flatMap(e -> Stream.of(e.getStart(), e.getEnd()))
-                .collect(toSet())
-        );
-
-        return edgeCollapsed;
     }
 
 }
