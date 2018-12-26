@@ -1,8 +1,10 @@
 package com.portkullis.projectdesigner.model;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Objects;
 
-public class Node {
+public class Node implements Comparable<Node> {
 
     private final long id;
     private String label;
@@ -35,6 +37,11 @@ public class Node {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    @Override
+    public int compareTo(@NotNull Node o) {
+        return Long.compare(id, o.id);
     }
 
     public long getId() {

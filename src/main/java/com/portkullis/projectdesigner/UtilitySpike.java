@@ -5,10 +5,10 @@ import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
 import com.portkullis.projectdesigner.model.*;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.*;
 
 public class UtilitySpike {
 
@@ -71,7 +71,7 @@ public class UtilitySpike {
                 }
             }
 
-            collapseUnnecessaryDummiesTest(graph);
+            collapseUnnecessaryDummies(graph);
         } finally {
             Date timerStop = new Date();
             System.out.println("Graph calculated in " + (timerStop.getTime() - timerStart.getTime()) + "ms");
@@ -92,15 +92,22 @@ public class UtilitySpike {
 
                 Set<List<Edge<Activity>>> allDistinctPaths = getAllDistinctPaths(graph, s, e);
                 System.out.println(allDistinctPaths.size() + " distinct paths through project network");
+
+                System.out.println("Total nodes: " + graph.getNodes().size());
+                System.out.println("Total activities: " + graph.getEdges().stream().filter(x -> x.getData() != null).count());
+                System.out.println("Total dummies: " + graph.getEdges().stream().filter(x -> x.getData() == null).count());
+                System.out.println("Total edges: " + graph.getEdges().size());
             }
         }
 
         visualizationEngine.visualizeGraph(graph);
     }
 
-    private static void collapseUnnecessaryDummiesTest(Graph<Activity> graph) {
+    private static void collapseUnnecessaryDummies(Graph<Activity> graph) {
         boolean keepSearching = true;
+
         findAndDeleteRedundantDummies(graph);
+        mergeNodesWithIdenticalPrerequisites(graph);
 
         while (keepSearching) {
             Optional<Edge<Activity>> unnecessaryDummy = getUnnecessaryDummies(graph).findFirst();
@@ -110,9 +117,65 @@ public class UtilitySpike {
             } else {
                 keepSearching = false;
             }
-
-            findAndDeleteRedundantDummies(graph);
         }
+    }
+
+    private static <T> void mergeNodesWithIdenticalPrerequisites(Graph<T> graph) {
+        Map<Node, Set<Long>> nodePrerequisites = graph.getNodes().stream()
+                .collect(toMap(Function.identity(), n -> getPrerequisiteActivities(graph, n)));
+
+        nodePrerequisites.forEach((k, v) -> {
+            System.out.println("Node " + k.getLabel() + " => " + v);
+        });
+
+        List<Node> nodes = graph.getNodes().stream().sorted().collect(toList());
+
+        while (nodes.size() > 1) {
+            Node node = nodes.remove(0);
+
+            for (Node compare : nodes) {
+                if (nodePrerequisites.get(node).equals(nodePrerequisites.get(compare))) {
+                    System.out.println("Merging node " + node + " into node " + compare + "...");
+                    mergeNodes(graph, node, compare);
+                }
+            }
+        }
+    }
+
+    private static <T> void mergeNodes(Graph<T> graph, Node node, Node target) {
+        List<Edge> edgesToRemove = new ArrayList<>();
+
+        Map<Node, Set<Node>> updatedEdges = new HashMap<>();
+
+        graph.getEdges().forEach(edge -> {
+            if (edge.getStart().equals(node)) {
+                edge.setStart(target);
+            }
+            if (edge.getEnd().equals(node)) {
+                edge.setEnd(target);
+            }
+
+            if (!updatedEdges.containsKey(edge.getStart())) {
+                updatedEdges.put(edge.getStart(), new HashSet<>());
+            }
+            if (!updatedEdges.get(edge.getStart()).contains(edge.getEnd())) {
+                updatedEdges.get(edge.getStart()).add(edge.getEnd());
+
+                if (edge.getStart().equals(edge.getEnd())) {
+                    edgesToRemove.add(edge);
+                }
+            } else {
+                edgesToRemove.add(edge);
+            }
+        });
+
+        graph.getEdges().removeAll(edgesToRemove);
+
+        graph.getNodes().clear();
+        graph.getNodes().addAll(graph.getEdges().stream()
+                .flatMap(e -> Stream.of(e.getStart(), e.getEnd()))
+                .collect(toSet())
+        );
     }
 
     private static <T> Set<Long> getNodesThatAreConnectedTo(Graph<T> graph, Node node) {
