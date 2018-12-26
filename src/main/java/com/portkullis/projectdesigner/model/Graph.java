@@ -1,5 +1,7 @@
 package com.portkullis.projectdesigner.model;
 
+import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -53,15 +55,6 @@ public class Graph<T> {
     }
 
     /**
-     * Sets the collection of nodes in the graph.
-     *
-     * @param nodes the nodes in the graph.
-     */
-    public void setNodes(Set<Node> nodes) {
-        this.nodes = nodes;
-    }
-
-    /**
      * Returns all of the edges in the graph.
      *
      * @return the edges in the graph.
@@ -71,15 +64,6 @@ public class Graph<T> {
             edges = new HashSet<>();
         }
         return edges;
-    }
-
-    /**
-     * Sets all the edges in the graph.
-     *
-     * @param edges the edges in the graph.
-     */
-    public void setEdges(Set<Edge<T>> edges) {
-        this.edges = edges;
     }
 
     private void fixNodes() {
@@ -142,10 +126,10 @@ public class Graph<T> {
 
     private Set<List<Edge<T>>> getAllDistinctPaths(List<Edge<T>> basePath, Node start, Node end) {
         if (!nodes.contains(start)) {
-            throw new RuntimeException("Graph does not contain starting node: " + start);
+            throw new ProjectDesignerRuntimeException("Graph does not contain starting node: " + start);
         }
         if (!nodes.contains(end)) {
-            throw new RuntimeException("Graph does not contain ending node: " + end);
+            throw new ProjectDesignerRuntimeException("Graph does not contain ending node: " + end);
         }
 
         Set<List<Edge<T>>> results = new HashSet<>();
@@ -172,7 +156,7 @@ public class Graph<T> {
 
     private void mergeNodesWithIdenticalPrerequisites() {
         Map<Node, Set<Long>> nodePrerequisites = nodes.stream()
-                .collect(toMap(Function.identity(), n -> getPrerequisiteActivities(n)));
+                .collect(toMap(Function.identity(), this::getPrerequisiteActivities));
 
         List<Node> nodesToCompare = nodes.stream().sorted().collect(toList());
 
@@ -222,12 +206,12 @@ public class Graph<T> {
     private Set<Long> getPrerequisiteActivities(Node end) {
         Set<Node> startNodes = getStartNodes();
 
-        if (startNodes.size() == 0) {
-            throw new RuntimeException("Could not find starting node for graph.");
+        if (startNodes.isEmpty()) {
+            throw new ProjectDesignerRuntimeException("Could not find starting node for graph.");
         }
 
         if (startNodes.size() > 1) {
-            throw new RuntimeException("Multiple start nodes found for graph.");
+            throw new ProjectDesignerRuntimeException("Multiple start nodes found for graph.");
         }
 
         return getAllDistinctPaths(startNodes.stream().findFirst().get(), end).stream()
@@ -249,11 +233,11 @@ public class Graph<T> {
     private Stream<Edge<T>> getUnnecessaryDummies() {
         return edges.stream()
                 // Only dummy edges can be collapsed
-                .filter(e -> isDummyActivity(e))
+                .filter(this::isDummyActivity)
                 // Triangles can not be collapsed
-                .filter(e -> isNotTriangleActivity(e))
+                .filter(this::isNotTriangleActivity)
                 // Edges can not be collapsed if the starting node has non-dummy edges leaving it and the end node has different prerequisite non-dummy activities
-                .filter(e -> endDoesNotHaveAdditionalPrerequisites(e));
+                .filter(this::endDoesNotHaveAdditionalPrerequisites);
     }
 
     private boolean isDummyActivity(Edge<T> e) {
@@ -292,12 +276,12 @@ public class Graph<T> {
         return allowed;
     }
 
-    private boolean collapseEdge(Edge<T> edge) {
+    private void collapseEdge(Edge<T> edge) {
         boolean edgeCollapsed = edges.removeIf(e -> e.getId() == edge.getId());
 
         if (edgeCollapsed) {
-            if (edges.stream().filter(e -> e.getId() == edge.getId()).count() > 0) {
-                throw new RuntimeException("Edge wasn't really removed: " + edge);
+            if (edges.stream().anyMatch(e -> e.getId() == edge.getId())) {
+                throw new ProjectDesignerRuntimeException("Edge wasn't really removed: " + edge);
             }
 
             Node a = edge.getStart();
@@ -314,16 +298,12 @@ public class Graph<T> {
         }
 
         fixNodes();
-
-        return edgeCollapsed;
     }
 
-    void simplifySimilarDummyNodes() {
+    private void simplifySimilarDummyNodes() {
         // Find all the nodes that only have dummy activities exiting from them...
         List<Node> nodesWithNoNonDummyExitActivities = nodes.stream()
-                .filter(n -> edges.stream()
-                        .filter(e -> e.getStart().equals(n)).filter(e -> e.getData() != null).count() == 0
-                )
+                .filter(n -> edges.stream().noneMatch(e -> e.getStart().equals(n) && e.getData() != null))
                 .collect(toList());
 
         // Reduce the list to only nodes that have at least two exits...
@@ -331,10 +311,9 @@ public class Graph<T> {
 
         Map<Node, Set<Long>> nodeTargets = new HashMap<>();
 
-        nodesWithNoNonDummyExitActivities.stream()
-                .forEach(n -> nodeTargets.put(n, edges.stream()
-                        .filter(e -> e.getStart().equals(n)).map(e -> e.getEnd().getId()).collect(toSet())
-                ));
+        nodesWithNoNonDummyExitActivities.forEach(n -> nodeTargets.put(n, edges.stream()
+                .filter(e -> e.getStart().equals(n)).map(e -> e.getEnd().getId()).collect(toSet())
+        ));
 
         while (nodesWithNoNonDummyExitActivities.size() > 1) {
             Node nodeToCompare = nodesWithNoNonDummyExitActivities.remove(0);
@@ -358,7 +337,7 @@ public class Graph<T> {
         }
     }
 
-    void collapseDummiesThatAreOnlyExitFromNodes() {
+    private void collapseDummiesThatAreOnlyExitFromNodes() {
         for (Node node : nodes) {
             Set<Edge<T>> nodeEdges = edges.stream().filter(e -> e.getStart().equals(node)).collect(toSet());
             if (nodeEdges.size() == 1) {
