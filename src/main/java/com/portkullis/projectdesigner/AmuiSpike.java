@@ -7,7 +7,7 @@ import com.portkullis.projectdesigner.model.EdgeProperties;
 public class AmuiSpike extends AbstractVisualizationSpike {
 
     private AmuiSpike() {
-        super(new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId()))));
+        super(new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId()), a.getDuration())));
     }
 
     public static void main(String[] args) {

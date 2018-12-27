@@ -110,19 +110,44 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
         exits.forEach(n -> labelChildrenNodes(graph, n, labelGenerator, labeledNodes));
     }
 
-    @Override
-    public void visualizeGraph(Graph<A> graph) {
+    private void visualizeGraph(Graph<A> graph) {
+        FloatCalculator floatCalculator = new FloatCalculator(graph, edgePropertyMapper);
+
+        int maxTotalFloat = graph.getEdges().stream()
+                .mapToInt(floatCalculator::getTotalFloat)
+                .max()
+                .orElse(0);
+        int highThreshold = maxTotalFloat / 9;
+        int medThreshold = maxTotalFloat / 3;
+
         try {
             StringBuffer buffer = new StringBuffer();
             buffer.append("digraph {\n");
             buffer.append("    rankdir = LR\n");
             graph.getEdges().forEach(e -> {
+                int totalFloat = floatCalculator.getTotalFloat(e);
+
+                String color;
                 buffer.append("    ").append(e.getStart().getLabel()).append(" -> ").append(e.getEnd().getLabel());
                 if (e.getData() != null) {
                     EdgeProperties ep = edgePropertyMapper.apply(e.getData());
-                    buffer.append(" [ label = \"").append(ep.getLabel()).append("\" ]");
+                    buffer.append(" [ label = \"")
+                            .append(ep.getLabel())
+                            .append(" - ")
+                            .append(totalFloat)
+                            .append("\"; ");
                 } else {
-                    buffer.append(" [ style = dotted ]");
+                    buffer.append(" [ style = dotted; ");
+                }
+
+                if (totalFloat == 0) {
+                    buffer.append(" color = black; ]");
+                } else if (totalFloat <= highThreshold) {
+                    buffer.append(" color = red; ]");
+                } else if (totalFloat <= medThreshold) {
+                    buffer.append(" color = orange; ]");
+                } else {
+                    buffer.append(" color = green; ]");
                 }
                 buffer.append(";\n");
             });
