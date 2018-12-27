@@ -22,11 +22,10 @@ public class Graph<T> {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Graph{");
-        sb.append("nodes=").append(nodes);
-        sb.append(", edges=").append(edges);
-        sb.append('}');
-        return sb.toString();
+        return "Graph{" +
+                "nodes=" + nodes +
+                ", edges=" + edges +
+                '}';
     }
 
     @Override
@@ -101,7 +100,7 @@ public class Graph<T> {
     }
 
     private void findAndDeleteRedundantDummies() {
-        List<Edge> dummies = edges.stream().filter(e -> e.getData() == null).collect(toList());
+        List<Edge> dummies = edges.stream().filter(e -> !e.getData().isPresent()).collect(toList());
 
         for (Edge dummy : dummies) {
             if (countPaths(dummy.getStart(), dummy.getEnd()) > 1) {
@@ -124,7 +123,7 @@ public class Graph<T> {
      * @return a collection of distinct paths between the two nodes.
      * @throws RuntimeException if either node does not exist in this graph.
      */
-    public Set<List<Edge<T>>> getAllDistinctPaths(Node start, Node end) {
+    private Set<List<Edge<T>>> getAllDistinctPaths(Node start, Node end) {
         return getAllDistinctPaths(new ArrayList<>(), start, end);
     }
 
@@ -186,7 +185,7 @@ public class Graph<T> {
             Node end = edge.getEnd().equals(node) ? target : edge.getEnd();
 
             if (!start.equals(end)) {
-                edges.add(new Edge<>(start, end, edge.getData()));
+                edges.add(new Edge<>(start, end, edge.getData().orElse(null)));
             }
         });
 
@@ -206,7 +205,7 @@ public class Graph<T> {
 
         return getAllDistinctPaths(startNodes.stream().findFirst().get(), end).stream()
                 .flatMap(List::stream)
-                .filter(e -> e.getData() != null)
+                .filter(e -> e.getData().isPresent())
                 .collect(toSet());
     }
 
@@ -215,9 +214,9 @@ public class Graph<T> {
      *
      * @return the set of starting nodes in the graph.
      */
-    public Set<Node> getStartNodes() {
+    Set<Node> getStartNodes() {
         Set<Node> nodesWithEdges = edges.stream()
-                .map(e -> e.getEnd())
+                .map(Edge::getEnd)
                 .collect(toSet());
         return nodes.stream()
                 .filter(n -> !nodesWithEdges.contains(n))
@@ -229,9 +228,9 @@ public class Graph<T> {
      *
      * @return the set of terminal nodes in the graph.
      */
-    public Set<Node> getTerminalNodes() {
+    Set<Node> getTerminalNodes() {
         Set<Node> nodesWithEdges = edges.stream()
-                .map(e -> e.getStart())
+                .map(Edge::getStart)
                 .collect(toSet());
         return nodes.stream()
                 .filter(n -> !nodesWithEdges.contains(n))
@@ -249,7 +248,7 @@ public class Graph<T> {
     }
 
     private boolean isDummyActivity(Edge<T> e) {
-        return e.getData() == null;
+        return !e.getData().isPresent();
     }
 
     private boolean isNotTriangleActivity(Edge<T> e) {
@@ -285,7 +284,7 @@ public class Graph<T> {
     }
 
     void collapseEdge(Edge<T> edge) {
-        if (edge.getData() != null) {
+        if (edge.getData().isPresent()) {
             throw new ProjectDesignerRuntimeException("Can not collapse an edge with activity data: " + edge);
         }
         mergeNodes(edge.getStart(), edge.getEnd());
@@ -294,7 +293,7 @@ public class Graph<T> {
     private void simplifySimilarDummyNodes() {
         // Find all the nodes that only have dummy activities exiting from them...
         List<Node> nodesWithNoNonDummyExitActivities = nodes.stream()
-                .filter(n -> edges.stream().noneMatch(e -> e.getStart().equals(n) && e.getData() != null))
+                .filter(n -> edges.stream().noneMatch(e -> e.getStart().equals(n) && e.getData().isPresent()))
                 .collect(toList());
 
         // Reduce the list to only nodes that have at least two exits...
@@ -317,7 +316,7 @@ public class Graph<T> {
 
                     Edge<T> edgeToUpdate = otherNodeExits.remove(0);
                     edges.remove(edgeToUpdate);
-                    edges.add(new Edge<>(edgeToUpdate.getStart(), nodeToCompare, edgeToUpdate.getData()));
+                    edges.add(new Edge<>(edgeToUpdate.getStart(), nodeToCompare, edgeToUpdate.getData().orElse(null)));
 
                     edges.removeAll(otherNodeExits);
 
@@ -333,7 +332,7 @@ public class Graph<T> {
         return nodes.stream()
                 .filter(n -> edges.stream().filter(e -> e.getStart().equals(n)).count() == 1)
                 .flatMap(n -> edges.stream().filter(e -> e.getStart().equals(n)))
-                .filter(e -> e.getData() == null)
+                .filter(e -> !e.getData().isPresent())
                 .filter(e -> disjoint(getNodesConnectedTo(e.getStart()), getNodesConnectedTo(e.getEnd())));
     }
 

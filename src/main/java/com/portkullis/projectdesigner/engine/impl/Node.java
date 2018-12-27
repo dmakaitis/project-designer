@@ -2,16 +2,30 @@ package com.portkullis.projectdesigner.engine.impl;
 
 import java.util.Objects;
 
+/**
+ * A node in a project arrow diagram.
+ */
 public class Node implements Comparable<Node> {
 
     private final long id;
     private String label;
 
+    /**
+     * Constructs the node.
+     *
+     * @param id the node ID.
+     */
     public Node(long id) {
         this.id = id;
     }
 
-    public Node(long id, String label) {
+    /**
+     * Constructs the node.
+     *
+     * @param id    the node ID.
+     * @param label the node label.
+     */
+    Node(long id, String label) {
         this(id);
         this.label = label;
     }
@@ -42,15 +56,15 @@ public class Node implements Comparable<Node> {
         return Long.compare(id, o.id);
     }
 
-    public long getId() {
+    long getId() {
         return id;
     }
 
-    public String getLabel() {
+    String getLabel() {
         return label;
     }
 
-    public void setLabel(String label) {
+    void setLabel(String label) {
         this.label = label;
     }
 

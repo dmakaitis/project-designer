@@ -1,17 +1,36 @@
 package com.portkullis.projectdesigner.engine.impl;
 
 import java.util.Objects;
+import java.util.Optional;
 
+/**
+ * An edge in a project arrow diagram.
+ *
+ * @param <T> the activity type.
+ */
 public class Edge<T> {
 
     private final Node start;
     private final Node end;
-    private T data;
+    private final T data;
 
+    /**
+     * Constructs the edge. Edges without activity data are considered to be dummy nodes.
+     *
+     * @param start the starting node.
+     * @param end   the ending node.
+     */
     public Edge(Node start, Node end) {
         this(start, end, null);
     }
 
+    /**
+     * Constructs the edge with the given activity data.
+     *
+     * @param start the starting node.
+     * @param end   the ending node.
+     * @param data  the activity data.
+     */
     public Edge(Node start, Node end, T data) {
         this.start = start;
         this.end = end;
@@ -41,20 +60,31 @@ public class Edge<T> {
         return Objects.hash(start, end);
     }
 
-    public Node getStart() {
+    /**
+     * Gets the starting node.
+     *
+     * @return the starting node.
+     */
+    Node getStart() {
         return start;
     }
 
-    public Node getEnd() {
+    /**
+     * Gets the ending node.
+     *
+     * @return the ending node.
+     */
+    Node getEnd() {
         return end;
     }
 
-    public T getData() {
-        return data;
-    }
-
-    public void setData(T data) {
-        this.data = data;
+    /**
+     * Gets the activity data, if any.
+     *
+     * @return the activity data.
+     */
+    Optional<T> getData() {
+        return Optional.ofNullable(data);
     }
 
 }

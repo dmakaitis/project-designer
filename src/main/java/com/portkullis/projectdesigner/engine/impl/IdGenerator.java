@@ -1,13 +1,14 @@
 package com.portkullis.projectdesigner.engine.impl;
 
-import java.util.Stack;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Utility class that generates identifier values.
  *
  * @author darius
  */
-public class IdGenerator {
+class IdGenerator {
 
     private static final String LABEL_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
     private static final int CHAR_COUNT = LABEL_CHARS.length();
@@ -19,13 +20,13 @@ public class IdGenerator {
      *
      * @return the next available ID.
      */
-    public long getNextId() {
+    long getNextId() {
         return ++lastId;
     }
 
-    public String getNextLabel() {
+    String getNextLabel() {
         long nextId = getNextId();
-        Stack<Character> charStack = new Stack<>();
+        Deque<Character> charStack = new ArrayDeque<>();
         while (nextId > 0) {
             char c = LABEL_CHARS.charAt((int) ((nextId - 1) % CHAR_COUNT));
             charStack.push(c);

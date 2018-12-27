@@ -4,6 +4,8 @@ import com.portkullis.projectdesigner.engine.VisualizationEngine;
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
 import com.portkullis.projectdesigner.model.EdgeProperties;
 import com.portkullis.projectdesigner.model.Project;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -11,7 +13,15 @@ import java.util.function.Function;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * Implementation of a project visualization engine.
+ *
+ * @param <A> the activity type.
+ * @param <I> the activity identifier type.
+ */
 public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(VisualizationEngine.class);
 
     private final Function<A, I> edgeIdentityMapper;
     private final Function<A, Collection<A>> edgePrerequisiteMapper;
@@ -100,18 +110,16 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
                     .map(Edge::getStart)
                     .map(Node::getId)
                     .collect(toSet());
-            if (labeledNodes.containsAll(sources)) {
-                if (!labeledNodes.contains(n.getId())) {
-                    n.setLabel(labelGenerator.getNextLabel());
-                    labeledNodes.add(n.getId());
-                }
+            if (labeledNodes.containsAll(sources) && !labeledNodes.contains(n.getId())) {
+                n.setLabel(labelGenerator.getNextLabel());
+                labeledNodes.add(n.getId());
             }
         });
         exits.forEach(n -> labelChildrenNodes(graph, n, labelGenerator, labeledNodes));
     }
 
     private void visualizeGraph(Graph<A> graph) {
-        FloatCalculator floatCalculator = new FloatCalculator(graph, edgePropertyMapper);
+        FloatCalculator<A> floatCalculator = new FloatCalculator<>(graph, edgePropertyMapper);
 
         int maxTotalFloat = graph.getEdges().stream()
                 .mapToInt(floatCalculator::getTotalFloat)
@@ -121,16 +129,15 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
         int medThreshold = maxTotalFloat / 3;
 
         try {
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder buffer = new StringBuilder();
             buffer.append("digraph {\n");
             buffer.append("    rankdir = LR\n");
             graph.getEdges().forEach(e -> {
                 int totalFloat = floatCalculator.getTotalFloat(e);
 
-                String color;
                 buffer.append("    ").append(e.getStart().getLabel()).append(" -> ").append(e.getEnd().getLabel());
-                if (e.getData() != null) {
-                    EdgeProperties ep = edgePropertyMapper.apply(e.getData());
+                if (e.getData().isPresent()) {
+                    EdgeProperties ep = edgePropertyMapper.apply(e.getData().get());
                     buffer.append(" [ label = \"")
                             .append(ep.getLabel())
                             .append(" - ")
@@ -158,7 +165,7 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
             dot.getOutputStream().close();
             dot.waitFor();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Failed to create graph visualization", e);
         }
     }
 
