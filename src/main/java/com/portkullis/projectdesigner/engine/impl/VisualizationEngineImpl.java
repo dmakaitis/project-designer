@@ -120,6 +120,7 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
 
     private void visualizeGraph(Graph<A> graph) {
         FloatCalculator<A> floatCalculator = new FloatCalculator<>(graph, edgePropertyMapper);
+        Map<Node, Integer> nodeFloatMap = new HashMap<>();
 
         int maxTotalFloat = graph.getEdges().stream()
                 .mapToInt(floatCalculator::getTotalFloat)
@@ -135,26 +136,44 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
             graph.getEdges().forEach(e -> {
                 int totalFloat = floatCalculator.getTotalFloat(e);
 
+                nodeFloatMap.put(e.getStart(), Math.min(totalFloat, nodeFloatMap.getOrDefault(e.getStart(), Integer.MAX_VALUE)));
+                nodeFloatMap.put(e.getEnd(), Math.min(totalFloat, nodeFloatMap.getOrDefault(e.getEnd(), Integer.MAX_VALUE)));
+
                 buffer.append("    ").append(e.getStart().getLabel()).append(" -> ").append(e.getEnd().getLabel());
                 if (e.getData().isPresent()) {
                     EdgeProperties ep = edgePropertyMapper.apply(e.getData().get());
                     buffer.append(" [ label = \"")
                             .append(ep.getLabel())
-                            .append(" - ")
-                            .append(totalFloat)
+//                            .append(" - ")
+//                            .append(totalFloat)
                             .append("\"; ");
                 } else {
                     buffer.append(" [ style = dotted; ");
                 }
 
                 if (totalFloat == 0) {
-                    buffer.append(" color = black; ]");
+                    buffer.append(" color = black; penwidth = 2; ]");
                 } else if (totalFloat <= highThreshold) {
                     buffer.append(" color = red; ]");
                 } else if (totalFloat <= medThreshold) {
                     buffer.append(" color = orange; ]");
                 } else {
                     buffer.append(" color = green; ]");
+                }
+                buffer.append(";\n");
+            });
+
+            graph.getNodes().forEach(n -> {
+                int totalFloat = nodeFloatMap.getOrDefault(n, 0);
+                buffer.append("    ").append(n.getLabel());
+                if (totalFloat == 0) {
+                    buffer.append(" [ color = black; penwidth = 2; ]");
+                } else if (totalFloat <= highThreshold) {
+                    buffer.append(" [ color = red; ]");
+                } else if (totalFloat <= medThreshold) {
+                    buffer.append(" [ color = orange; ]");
+                } else {
+                    buffer.append(" [ color = green; ]");
                 }
                 buffer.append(";\n");
             });
