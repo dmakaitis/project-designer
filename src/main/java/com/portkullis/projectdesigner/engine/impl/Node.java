@@ -1,4 +1,4 @@
-package com.portkullis.projectdesigner.model;
+package com.portkullis.projectdesigner.engine.impl;
 
 import org.jetbrains.annotations.NotNull;
 

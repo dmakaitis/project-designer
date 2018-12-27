@@ -2,15 +2,16 @@ package com.portkullis.projectdesigner;
 
 import com.portkullis.projectdesigner.engine.VisualizationEngine;
 import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
-import com.portkullis.projectdesigner.model.*;
+import com.portkullis.projectdesigner.model.Activity;
+import com.portkullis.projectdesigner.model.EdgeProperties;
 
-import java.util.*;
-
-import static java.util.stream.Collectors.toSet;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 public class UtilitySpike {
 
-    private static final VisualizationEngine<Activity> visualizationEngine = new VisualizationEngineImpl<>(a -> new EdgeProperties(Long.toString(a.getId())));
+    private static final VisualizationEngine<Activity> visualizationEngine = new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId())));
 
     public static void main(String[] args) {
         List<Activity> utilityData = new ArrayList<>();
@@ -37,86 +38,13 @@ public class UtilitySpike {
         Activity activity20 = addActivity(utilityData, new Activity(20, "Client App 2", 35, activity17));
         Activity activity21 = addActivity(utilityData, new Activity(21, "System Test", 30, activity5, activity19, activity20));
 
-        Graph<Activity> graph = new Graph();
         Date timerStart = new Date();
         try {
-            long nodeId = 0;
-            long edgeId = 0;
-
-            Node start = new Node(++nodeId, "Start");
-            Node end = new Node(++nodeId, "End");
-
-            graph.getNodes().add(start);
-            graph.getNodes().add(end);
-
-            Map<Long, Node> activityEndNodeMap = new HashMap<>();
-
-            for (Activity a : utilityData) {
-                Node from = new Node(++nodeId, "N" + nodeId);
-                Node to = new Node(++nodeId, "N" + nodeId);
-
-                activityEndNodeMap.put(a.getId(), to);
-
-                graph.getNodes().add(from);
-                graph.getNodes().add(to);
-
-                graph.getEdges().add(new Edge<>(++edgeId, start, from));
-                graph.getEdges().add(new Edge<>(++edgeId, from, to, a));
-                graph.getEdges().add(new Edge<>(++edgeId, to, end));
-
-                for (Activity p : a.getPredecessors()) {
-                    graph.getEdges().add(new Edge<>(++edgeId, activityEndNodeMap.get(p.getId()), from));
-                }
-            }
-
-            graph.simplifyDummies();
+            visualizationEngine.visualizeUtilityData(utilityData);
         } finally {
             Date timerStop = new Date();
             System.out.println("Graph calculated in " + (timerStop.getTime() - timerStart.getTime()) + "ms");
-
-            Set<Node> starts = getStartNodes(graph);
-            Set<Node> ends = getEndNode(graph);
-
-            System.out.println("Graph has " + starts.size() + " starts and " + ends.size() + " ends.");
-            if (starts.size() == 1 && ends.size() == 1) {
-                Node s = starts.stream().findFirst().get();
-                Node e = ends.stream().findFirst().get();
-
-                s.setLabel("Start");
-                e.setLabel("End");
-
-                System.out.println("Starting node: " + s);
-                System.out.println("Ending node: " + e);
-
-                Set<List<Edge<Activity>>> allDistinctPaths = graph.getAllDistinctPaths(s, e);
-                System.out.println(allDistinctPaths.size() + " distinct paths through project network");
-
-                System.out.println("Total nodes: " + graph.getNodes().size());
-                System.out.println("Total activities: " + graph.getEdges().stream().filter(x -> x.getData() != null).count());
-                System.out.println("Total dummies: " + graph.getEdges().stream().filter(x -> x.getData() == null).count());
-                System.out.println("Total edges: " + graph.getEdges().size());
-            }
         }
-
-        visualizationEngine.visualizeGraph(graph);
-    }
-
-    private static <T> Set<Node> getStartNodes(Graph<T> graph) {
-        Set<Long> nodes = graph.getEdges().stream()
-                .map(e -> e.getEnd().getId())
-                .collect(toSet());
-        return graph.getNodes().stream()
-                .filter(n -> !nodes.contains(n.getId()))
-                .collect(toSet());
-    }
-
-    private static Set<Node> getEndNode(Graph<?> graph) {
-        Set<Long> nodes = graph.getEdges().stream()
-                .map(e -> e.getStart().getId())
-                .collect(toSet());
-        return graph.getNodes().stream()
-                .filter(n -> !nodes.contains(n.getId()))
-                .collect(toSet());
     }
 
     private static Activity addActivity(List<Activity> utilityData, Activity activity) {

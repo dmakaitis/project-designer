@@ -1,15 +1,19 @@
 package com.portkullis.projectdesigner;
 
 import com.portkullis.projectdesigner.engine.VisualizationEngine;
+import com.portkullis.projectdesigner.engine.impl.Edge;
+import com.portkullis.projectdesigner.engine.impl.Graph;
+import com.portkullis.projectdesigner.engine.impl.Node;
 import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
-import com.portkullis.projectdesigner.model.Edge;
 import com.portkullis.projectdesigner.model.EdgeProperties;
-import com.portkullis.projectdesigner.model.Graph;
-import com.portkullis.projectdesigner.model.Node;
+
+import java.util.HashSet;
+
+import static java.util.function.Function.identity;
 
 public class DotSpike {
 
-    private static final VisualizationEngine<String> visualizationEngine = new VisualizationEngineImpl<>(EdgeProperties::new);
+    private static final VisualizationEngine<String> visualizationEngine = new VisualizationEngineImpl<>(identity(), e -> new HashSet<>(), EdgeProperties::new);
 
     public static void main(String[] args) throws Exception {
         Graph<String> graph = new Graph<>();

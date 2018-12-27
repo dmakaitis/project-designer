@@ -1,4 +1,4 @@
-package com.portkullis.projectdesigner.model;
+package com.portkullis.projectdesigner.engine.impl;
 
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
 
@@ -78,6 +78,8 @@ public class Graph<T> {
      */
     public void simplifyDummies() {
         boolean keepSearching = true;
+
+        fixNodes();
 
         findAndDeleteRedundantDummies();
         mergeNodesWithIdenticalPrerequisites();
@@ -221,9 +223,28 @@ public class Graph<T> {
                 .collect(toSet());
     }
 
-    private Set<Node> getStartNodes() {
+    /**
+     * Returns the set of nodes that have no edges leading into them.
+     *
+     * @return the set of starting nodes in the graph.
+     */
+    public Set<Node> getStartNodes() {
         Set<Long> nodesWithEdges = edges.stream()
                 .map(e -> e.getEnd().getId())
+                .collect(toSet());
+        return nodes.stream()
+                .filter(n -> !nodesWithEdges.contains(n.getId()))
+                .collect(toSet());
+    }
+
+    /**
+     * Returns the set of nodes that have no edges leading out of them.
+     *
+     * @return the set of terminal nodes in the graph.
+     */
+    public Set<Node> getTerminalNodes() {
+        Set<Long> nodesWithEdges = edges.stream()
+                .map(e -> e.getStart().getId())
                 .collect(toSet());
         return nodes.stream()
                 .filter(n -> !nodesWithEdges.contains(n.getId()))
