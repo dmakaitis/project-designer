@@ -9,6 +9,9 @@ import java.util.Stack;
  */
 public class IdGenerator {
 
+    private static final String LABEL_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    private static final int CHAR_COUNT = LABEL_CHARS.length();
+
     private long lastId = 0;
 
     /**
@@ -24,9 +27,9 @@ public class IdGenerator {
         long nextId = getNextId();
         Stack<Character> charStack = new Stack<>();
         while (nextId > 0) {
-            char c = (char) ('A' + ((nextId - 1) % 26));
+            char c = LABEL_CHARS.charAt((int) ((nextId - 1) % CHAR_COUNT));
             charStack.push(c);
-            nextId = (nextId - 1) / 26;
+            nextId = (nextId - 1) / CHAR_COUNT;
         }
         StringBuilder builder = new StringBuilder();
         while (!charStack.isEmpty()) {

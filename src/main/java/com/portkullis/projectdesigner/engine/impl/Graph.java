@@ -3,10 +3,11 @@ package com.portkullis.projectdesigner.engine.impl;
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Collections.disjoint;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.*;
 
 /**
@@ -77,25 +78,26 @@ public class Graph<T> {
      * nodes and edges that is equivilant to the original graph.
      */
     public void simplifyDummies() {
-        boolean keepSearching = true;
-
         fixNodes();
 
         findAndDeleteRedundantDummies();
         mergeNodesWithIdenticalPrerequisites();
 
-        while (keepSearching) {
+        Optional<Edge<T>> unnecessaryDummy;
+        do {
             simplifySimilarDummyNodes();
-            collapseDummiesThatAreOnlyExitFromNodes();
 
-            Optional<Edge<T>> unnecessaryDummy = getUnnecessaryDummies().findFirst();
+            unnecessaryDummy = getMergeCandidates().findFirst();
 
-            if (unnecessaryDummy.isPresent()) {
-                collapseEdge(unnecessaryDummy.get());
-            } else {
-                keepSearching = false;
-            }
-        }
+            unnecessaryDummy.ifPresent(this::collapseEdge);
+        } while (unnecessaryDummy.isPresent());
+    }
+
+    private Stream<Edge<T>> getMergeCandidates() {
+        return Stream.of(
+                getDummiesThatAreOnlyExitsFromNodes(),
+                getUnnecessaryDummies()
+        ).flatMap(identity());
     }
 
     private void findAndDeleteRedundantDummies() {
@@ -158,7 +160,7 @@ public class Graph<T> {
 
     private void mergeNodesWithIdenticalPrerequisites() {
         Map<Node, Set<Edge<T>>> nodePrerequisites = nodes.stream()
-                .collect(toMap(Function.identity(), this::getPrerequisiteActivities));
+                .collect(toMap(identity(), this::getPrerequisiteActivities));
 
         List<Node> nodesToCompare = nodes.stream().sorted().collect(toList());
 
@@ -251,7 +253,7 @@ public class Graph<T> {
     }
 
     private boolean isNotTriangleActivity(Edge<T> e) {
-        return Collections.disjoint(getNodesThatAreConnectedTo(e.getStart()), getNodesThatAreConnectedTo(e.getEnd()));
+        return disjoint(getNodesThatAreConnectedTo(e.getStart()), getNodesThatAreConnectedTo(e.getEnd()));
     }
 
     private Set<Long> getNodesThatAreConnectedTo(Node node) {
@@ -287,26 +289,6 @@ public class Graph<T> {
             throw new ProjectDesignerRuntimeException("Can not collapse an edge with activity data: " + edge);
         }
         mergeNodes(edge.getStart(), edge.getEnd());
-//        boolean edgeCollapsed = edges.remove(edge);
-//
-//        if (edgeCollapsed) {
-//            Node start = edge.getStart();
-//            Node end = edge.getEnd();
-//
-//            List<Edge<T>> edgesToUpdate = edges.stream()
-//                    .filter(e -> e.getStart().equals(end) || e.getEnd().equals(end))
-//                    .collect(toList());
-//            edges.removeAll(edgesToUpdate);
-//
-//            edgesToUpdate.forEach(e -> {
-//                Node newStart = e.getStart().equals(end) ? start : e.getStart();
-//                Node newEnd = e.getEnd().equals(end) ? start : e.getEnd();
-//
-//                edges.add(new Edge<>(newStart, newEnd, e.getData()));
-//            });
-//        }
-//
-//        fixNodes();
     }
 
     private void simplifySimilarDummyNodes() {
@@ -347,21 +329,12 @@ public class Graph<T> {
         }
     }
 
-    private void collapseDummiesThatAreOnlyExitFromNodes() {
-        for (Node node : nodes) {
-            Set<Edge<T>> nodeEdges = edges.stream().filter(e -> e.getStart().equals(node)).collect(toSet());
-            if (nodeEdges.size() == 1) {
-                nodeEdges.forEach(e -> {
-                    if (e.getData() == null) {
-                        Set<Node> startConnections = getNodesConnectedTo(e.getStart());
-                        Set<Node> endConnections = getNodesConnectedTo(e.getEnd());
-                        if (Collections.disjoint(startConnections, endConnections)) {
-                            collapseEdge(e);
-                        }
-                    }
-                });
-            }
-        }
+    private Stream<Edge<T>> getDummiesThatAreOnlyExitsFromNodes() {
+        return nodes.stream()
+                .filter(n -> edges.stream().filter(e -> e.getStart().equals(n)).count() == 1)
+                .flatMap(n -> edges.stream().filter(e -> e.getStart().equals(n)))
+                .filter(e -> e.getData() == null)
+                .filter(e -> disjoint(getNodesConnectedTo(e.getStart()), getNodesConnectedTo(e.getEnd())));
     }
 
     private Set<Node> getNodesConnectedTo(Node node) {
