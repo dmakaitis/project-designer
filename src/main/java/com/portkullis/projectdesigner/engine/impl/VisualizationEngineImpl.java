@@ -28,10 +28,9 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
         Graph<A> graph = new Graph<>();
 
         IdGenerator nodeIdGenerator = new IdGenerator();
-        IdGenerator edgeIdGenerator = new IdGenerator();
 
         Node start = new Node(nodeIdGenerator.getNextId(), "Start");
-        Node end = new Node(nodeIdGenerator.getNextId(), "End");
+        graph.getNodes().add(start);
 
         Map<I, Node> activityEndNodeMap = new HashMap<>();
 
@@ -46,12 +45,23 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
             graph.getNodes().add(from);
             graph.getNodes().add(to);
 
-            graph.getEdges().add(new Edge<>(edgeIdGenerator.getNextId(), start, from));
-            graph.getEdges().add(new Edge<>(edgeIdGenerator.getNextId(), from, to, activity));
-            graph.getEdges().add(new Edge<>(edgeIdGenerator.getNextId(), to, end));
+            graph.getEdges().add(new Edge<>(from, to, activity));
 
-            for (A p : edgePrerequisiteMapper.apply(activity)) {
-                graph.getEdges().add(new Edge<>(edgeIdGenerator.getNextId(), activityEndNodeMap.get(edgeIdentityMapper.apply(p)), from));
+            Collection<A> prerequisites = edgePrerequisiteMapper.apply(activity);
+            if (prerequisites.isEmpty()) {
+                graph.getEdges().add(new Edge<>(start, from));
+            } else {
+                for (A p : prerequisites) {
+                    graph.getEdges().add(new Edge<>(activityEndNodeMap.get(edgeIdentityMapper.apply(p)), from));
+                }
+            }
+        }
+
+        Node end = new Node(nodeIdGenerator.getNextId(), "End");
+        graph.getNodes().add(end);
+        for (Node terminalNode : graph.getTerminalNodes()) {
+            if (!terminalNode.equals(end)) {
+                graph.getEdges().add(new Edge<>(terminalNode, end));
             }
         }
 
@@ -59,7 +69,7 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
 
         Set<Node> startNodes = graph.getStartNodes();
         if (startNodes.size() != 1) {
-            throw new ProjectDesignerRuntimeException("A project must have exactly one starting activity.");
+            throw new ProjectDesignerRuntimeException("A project must have exactly one starting activity. Project has " + startNodes.size() + " start activities.");
         }
         startNodes.forEach(n -> n.setLabel("Start"));
         start = startNodes.iterator().next();

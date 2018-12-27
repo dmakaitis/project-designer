@@ -1,7 +1,5 @@
-plugins {
-    id 'java'
-    id 'org.jetbrains.intellij' version '0.3.12'
-}
+apply plugin: 'java'
+apply plugin: 'groovy'
 
 group 'com.portkullis'
 version '1.0-SNAPSHOT'
@@ -13,14 +11,6 @@ repositories {
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-}
-
-intellij {
-    version '2018.3.2'
-}
-patchPluginXml {
-    changeNotes """
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>"""
+    testCompile 'org.codehaus.groovy:groovy-all:2.4.15'
+    testCompile 'org.spockframework:spock-core:1.2-groovy-2.4'
 }

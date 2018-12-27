@@ -39,38 +39,36 @@ public class DotSpike {
         Node nodeR = addNode(graph, ++nodeId, "R");
         Node end = addNode(graph, ++nodeId, "End");
 
-        long edgeId = 0;
+        graph.getEdges().add(new Edge<>(start, nodeA, "1"));
+        graph.getEdges().add(new Edge<>(nodeA, nodeB, "2"));
+        graph.getEdges().add(new Edge<>(nodeB, nodeC, "3"));
+        graph.getEdges().add(new Edge<>(nodeC, nodeJ, "4"));
+        graph.getEdges().add(new Edge<>(nodeJ, nodeR, "5"));
+        graph.getEdges().add(new Edge<>(nodeC, nodeG, "6"));
+        graph.getEdges().add(new Edge<>(nodeC, nodeD, "7"));
+        graph.getEdges().add(new Edge<>(nodeC, nodeE, "8"));
+        graph.getEdges().add(new Edge<>(nodeC, nodeH, "9"));
+        graph.getEdges().add(new Edge<>(nodeC, nodeF, "10"));
+        graph.getEdges().add(new Edge<>(nodeH, nodeN, "11"));
+        graph.getEdges().add(new Edge<>(nodeF, nodeK, "12"));
+        graph.getEdges().add(new Edge<>(nodeG, nodeK, "13"));
+        graph.getEdges().add(new Edge<>(nodeK, nodeN, "14"));
+        graph.getEdges().add(new Edge<>(nodeK, nodeL, "15"));
+        graph.getEdges().add(new Edge<>(nodeG, nodeM, "16"));
+        graph.getEdges().add(new Edge<>(nodeN, nodeQ, "17"));
+        graph.getEdges().add(new Edge<>(nodeM, nodeP, "18"));
+        graph.getEdges().add(new Edge<>(nodeP, nodeR, "19"));
+        graph.getEdges().add(new Edge<>(nodeQ, nodeR, "20"));
+        graph.getEdges().add(new Edge<>(nodeR, end, "21"));
 
-        graph.getEdges().add(new Edge<>(++edgeId, start, nodeA, "1"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeA, nodeB, "2"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeB, nodeC, "3"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeC, nodeJ, "4"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeJ, nodeR, "5"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeC, nodeG, "6"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeC, nodeD, "7"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeC, nodeE, "8"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeC, nodeH, "9"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeC, nodeF, "10"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeH, nodeN, "11"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeF, nodeK, "12"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeG, nodeK, "13"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeK, nodeN, "14"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeK, nodeL, "15"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeG, nodeM, "16"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeN, nodeQ, "17"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeM, nodeP, "18"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeP, nodeR, "19"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeQ, nodeR, "20"));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeR, end, "21"));
-
-        graph.getEdges().add(new Edge<>(++edgeId, nodeD, nodeE));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeE, nodeM));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeE, nodeN));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeG, nodeF));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeG, nodeH));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeL, nodeM));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeL, nodeN));
-        graph.getEdges().add(new Edge<>(++edgeId, nodeQ, nodeP));
+        graph.getEdges().add(new Edge<>(nodeD, nodeE));
+        graph.getEdges().add(new Edge<>(nodeE, nodeM));
+        graph.getEdges().add(new Edge<>(nodeE, nodeN));
+        graph.getEdges().add(new Edge<>(nodeG, nodeF));
+        graph.getEdges().add(new Edge<>(nodeG, nodeH));
+        graph.getEdges().add(new Edge<>(nodeL, nodeM));
+        graph.getEdges().add(new Edge<>(nodeL, nodeN));
+        graph.getEdges().add(new Edge<>(nodeQ, nodeP));
 
         visualizationEngine.visualizeGraph(graph);
     }

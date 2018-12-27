@@ -1,7 +1,5 @@
 package com.portkullis.projectdesigner.engine.impl;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Objects;
 
 public class Node implements Comparable<Node> {
@@ -40,7 +38,7 @@ public class Node implements Comparable<Node> {
     }
 
     @Override
-    public int compareTo(@NotNull Node o) {
+    public int compareTo(Node o) {
         return Long.compare(id, o.id);
     }
 

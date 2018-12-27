@@ -157,7 +157,7 @@ public class Graph<T> {
     }
 
     private void mergeNodesWithIdenticalPrerequisites() {
-        Map<Node, Set<Long>> nodePrerequisites = nodes.stream()
+        Map<Node, Set<Edge<T>>> nodePrerequisites = nodes.stream()
                 .collect(toMap(Function.identity(), this::getPrerequisiteActivities));
 
         List<Node> nodesToCompare = nodes.stream().sorted().collect(toList());
@@ -165,7 +165,7 @@ public class Graph<T> {
         while (nodesToCompare.size() > 1) {
             Node compareNode = nodesToCompare.remove(0);
 
-            for (Node otherNode : nodes) {
+            for (Node otherNode : nodesToCompare) {
                 if (nodePrerequisites.get(compareNode).equals(nodePrerequisites.get(otherNode))) {
                     mergeNodes(compareNode, otherNode);
                 }
@@ -173,39 +173,25 @@ public class Graph<T> {
         }
     }
 
-    private void mergeNodes(Node node, Node target) {
-        List<Edge> edgesToRemove = new ArrayList<>();
+    void mergeNodes(Node node, Node target) {
+        List<Edge<T>> edgesToUpdate = edges.stream()
+                .filter(e -> e.getStart().equals(node) || e.getEnd().equals(node))
+                .collect(toList());
+        edges.removeAll(edgesToUpdate);
 
-        Map<Node, Set<Node>> updatedEdges = new HashMap<>();
+        edgesToUpdate.forEach(edge -> {
+            Node start = edge.getStart().equals(node) ? target : edge.getStart();
+            Node end = edge.getEnd().equals(node) ? target : edge.getEnd();
 
-        edges.forEach(edge -> {
-            if (edge.getStart().equals(node)) {
-                edge.setStart(target);
-            }
-            if (edge.getEnd().equals(node)) {
-                edge.setEnd(target);
-            }
-
-            if (!updatedEdges.containsKey(edge.getStart())) {
-                updatedEdges.put(edge.getStart(), new HashSet<>());
-            }
-            if (!updatedEdges.get(edge.getStart()).contains(edge.getEnd())) {
-                updatedEdges.get(edge.getStart()).add(edge.getEnd());
-
-                if (edge.getStart().equals(edge.getEnd())) {
-                    edgesToRemove.add(edge);
-                }
-            } else {
-                edgesToRemove.add(edge);
+            if (!start.equals(end)) {
+                edges.add(new Edge<>(start, end, edge.getData()));
             }
         });
-
-        edges.removeAll(edgesToRemove);
 
         fixNodes();
     }
 
-    private Set<Long> getPrerequisiteActivities(Node end) {
+    private Set<Edge<T>> getPrerequisiteActivities(Node end) {
         Set<Node> startNodes = getStartNodes();
 
         if (startNodes.isEmpty()) {
@@ -219,7 +205,6 @@ public class Graph<T> {
         return getAllDistinctPaths(startNodes.stream().findFirst().get(), end).stream()
                 .flatMap(List::stream)
                 .filter(e -> e.getData() != null)
-                .map(Edge::getId)
                 .collect(toSet());
     }
 
@@ -229,11 +214,11 @@ public class Graph<T> {
      * @return the set of starting nodes in the graph.
      */
     public Set<Node> getStartNodes() {
-        Set<Long> nodesWithEdges = edges.stream()
-                .map(e -> e.getEnd().getId())
+        Set<Node> nodesWithEdges = edges.stream()
+                .map(e -> e.getEnd())
                 .collect(toSet());
         return nodes.stream()
-                .filter(n -> !nodesWithEdges.contains(n.getId()))
+                .filter(n -> !nodesWithEdges.contains(n))
                 .collect(toSet());
     }
 
@@ -243,11 +228,11 @@ public class Graph<T> {
      * @return the set of terminal nodes in the graph.
      */
     public Set<Node> getTerminalNodes() {
-        Set<Long> nodesWithEdges = edges.stream()
-                .map(e -> e.getStart().getId())
+        Set<Node> nodesWithEdges = edges.stream()
+                .map(e -> e.getStart())
                 .collect(toSet());
         return nodes.stream()
-                .filter(n -> !nodesWithEdges.contains(n.getId()))
+                .filter(n -> !nodesWithEdges.contains(n))
                 .collect(toSet());
     }
 
@@ -287,8 +272,8 @@ public class Graph<T> {
         if (edges.stream()
                 .filter(x -> x.getStart().getId() == e.getStart().getId())
                 .count() > 1) {
-            Set<Long> startPrerequisites = getPrerequisiteActivities(e.getStart());
-            Set<Long> endPrerequisites = getPrerequisiteActivities(e.getEnd());
+            Set<Edge<T>> startPrerequisites = getPrerequisiteActivities(e.getStart());
+            Set<Edge<T>> endPrerequisites = getPrerequisiteActivities(e.getEnd());
 
             endPrerequisites.removeAll(startPrerequisites);
 
@@ -297,28 +282,31 @@ public class Graph<T> {
         return allowed;
     }
 
-    private void collapseEdge(Edge<T> edge) {
-        boolean edgeCollapsed = edges.removeIf(e -> e.getId() == edge.getId());
-
-        if (edgeCollapsed) {
-            if (edges.stream().anyMatch(e -> e.getId() == edge.getId())) {
-                throw new ProjectDesignerRuntimeException("Edge wasn't really removed: " + edge);
-            }
-
-            Node a = edge.getStart();
-            Node b = edge.getEnd();
-
-            for (Edge<T> e : edges) {
-                if (e.getStart().equals(b)) {
-                    e.setStart(a);
-                }
-                if (e.getEnd().equals(b)) {
-                    e.setEnd(a);
-                }
-            }
+    void collapseEdge(Edge<T> edge) {
+        if (edge.getData() != null) {
+            throw new ProjectDesignerRuntimeException("Can not collapse an edge with activity data: " + edge);
         }
-
-        fixNodes();
+        mergeNodes(edge.getStart(), edge.getEnd());
+//        boolean edgeCollapsed = edges.remove(edge);
+//
+//        if (edgeCollapsed) {
+//            Node start = edge.getStart();
+//            Node end = edge.getEnd();
+//
+//            List<Edge<T>> edgesToUpdate = edges.stream()
+//                    .filter(e -> e.getStart().equals(end) || e.getEnd().equals(end))
+//                    .collect(toList());
+//            edges.removeAll(edgesToUpdate);
+//
+//            edgesToUpdate.forEach(e -> {
+//                Node newStart = e.getStart().equals(end) ? start : e.getStart();
+//                Node newEnd = e.getEnd().equals(end) ? start : e.getEnd();
+//
+//                edges.add(new Edge<>(newStart, newEnd, e.getData()));
+//            });
+//        }
+//
+//        fixNodes();
     }
 
     private void simplifySimilarDummyNodes() {
@@ -341,14 +329,15 @@ public class Graph<T> {
 
             for (Node otherNode : nodesWithNoNonDummyExitActivities) {
                 if (nodeTargets.get(nodeToCompare).equals(nodeTargets.get(otherNode))) {
-                    List<Long> otherNodeExits = edges.stream()
+                    List<Edge<T>> otherNodeExits = edges.stream()
                             .filter(e -> e.getStart().equals(otherNode))
-                            .map(Edge::getId).collect(toList());
+                            .collect(toList());
 
-                    long edgeToUpdate = otherNodeExits.remove(0);
-                    edges.stream().filter(e -> e.getId() == edgeToUpdate).forEach(e -> e.setEnd(nodeToCompare));
+                    Edge<T> edgeToUpdate = otherNodeExits.remove(0);
+                    edges.remove(edgeToUpdate);
+                    edges.add(new Edge<>(edgeToUpdate.getStart(), nodeToCompare, edgeToUpdate.getData()));
 
-                    edges.removeIf(e -> otherNodeExits.contains(e.getId()));
+                    edges.removeAll(otherNodeExits);
 
                     nodeTargets.get(otherNode).clear();
                     nodeTargets.get(otherNode).add(nodeToCompare.getId());
@@ -364,10 +353,23 @@ public class Graph<T> {
             if (nodeEdges.size() == 1) {
                 nodeEdges.forEach(e -> {
                     if (e.getData() == null) {
-                        collapseEdge(e);
+                        Set<Node> startConnections = getNodesConnectedTo(e.getStart());
+                        Set<Node> endConnections = getNodesConnectedTo(e.getEnd());
+                        if (Collections.disjoint(startConnections, endConnections)) {
+                            collapseEdge(e);
+                        }
                     }
                 });
             }
         }
     }
+
+    private Set<Node> getNodesConnectedTo(Node node) {
+        return edges.stream()
+                .filter(e -> e.getStart().equals(node) || e.getEnd().equals(node))
+                .flatMap(e -> Stream.of(e.getStart(), e.getEnd()))
+                .filter(n -> !n.equals(node))
+                .collect(toSet());
+    }
+
 }
