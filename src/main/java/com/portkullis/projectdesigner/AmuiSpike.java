@@ -1,23 +1,21 @@
 package com.portkullis.projectdesigner;
 
-import com.portkullis.projectdesigner.engine.VisualizationEngine;
 import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
 import com.portkullis.projectdesigner.model.Activity;
 import com.portkullis.projectdesigner.model.EdgeProperties;
 
-import java.util.*;
+public class AmuiSpike extends AbstractVisualizationSpike {
 
-import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toSet;
-
-public class AmuiSpike {
-
-    private static final VisualizationEngine<Activity> visualizationEngine = new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId())));
-
-    private static final List<Activity> UTILITY_DATA = new ArrayList<>();
-    private static final Map<Integer, Activity> ACTIVITY_MAP = new HashMap<>();
+    private AmuiSpike() {
+        super(new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId()))));
+    }
 
     public static void main(String[] args) {
+        new AmuiSpike().run();
+    }
+
+    @Override
+    protected void defineActivities() {
         addActivity(1, "Requirements", 15);
         addActivity(2, "DetailedRequirements", 20, 1);
         addActivity(3, "Architecture", 20, 1);
@@ -78,31 +76,6 @@ public class AmuiSpike {
         addActivity(49, "Milestone 1 - Identity Provider and User Admin Client", 30, 47, 51);
 
         addActivity(45, "Deployment", 30, 43, 44, 51, 49);
-
-        Date timerStart = new Date();
-        try {
-            visualizationEngine.visualizeUtilityData(UTILITY_DATA);
-        } finally {
-            Date timerStop = new Date();
-            System.out.println("Graph calculated in " + (timerStop.getTime() - timerStart.getTime()) + "ms");
-        }
-    }
-
-    private static void addActivity(int activityId, String description, int duration, Integer... prerequisites) {
-        List<Integer> prerequisitesList = asList(prerequisites);
-        Set<Activity> prereqs = ACTIVITY_MAP.entrySet().stream()
-                .filter(e -> prerequisitesList.contains(e.getKey()))
-                .map(Map.Entry::getValue)
-                .collect(toSet());
-
-        if (prereqs.size() != prerequisites.length) {
-            throw new RuntimeException("Could not find all prerequisites for activity " + activityId + ": " + prerequisitesList);
-        }
-
-        Activity activity = new Activity(activityId, description, duration, prereqs);
-
-        ACTIVITY_MAP.put(activityId, activity);
-        UTILITY_DATA.add(activity);
     }
 
 }

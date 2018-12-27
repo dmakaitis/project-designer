@@ -15,7 +15,7 @@ public class DotSpike {
 
     private static final VisualizationEngine<String> visualizationEngine = new VisualizationEngineImpl<>(identity(), e -> new HashSet<>(), EdgeProperties::new);
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Graph<String> graph = new Graph<>();
 
         long nodeId = 0;
@@ -75,7 +75,7 @@ public class DotSpike {
         visualizationEngine.visualizeGraph(graph);
     }
 
-    static Node addNode(Graph graph, long nodeId, String label) {
+    private static Node addNode(Graph<String> graph, long nodeId, String label) {
         Node node = new Node(nodeId, label);
         graph.getNodes().add(node);
         return node;

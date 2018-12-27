@@ -1,13 +1,17 @@
 package com.portkullis.projectdesigner.engine;
 
 import com.portkullis.projectdesigner.engine.impl.Graph;
+import com.portkullis.projectdesigner.model.Project;
 
-import java.util.Collection;
+/**
+ * Engine for creating project visualizations.
+ *
+ * @param <A> the type of activities in the project.
+ */
+public interface VisualizationEngine<A> {
 
-public interface VisualizationEngine<T> {
+    void visualizeProject(Project<A> project);
 
-    void visualizeUtilityData(Collection<T> utilityData);
-
-    void visualizeGraph(Graph<T> graph);
+    void visualizeGraph(Graph<A> graph);
 
 }

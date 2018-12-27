@@ -3,6 +3,7 @@ package com.portkullis.projectdesigner.engine.impl;
 import com.portkullis.projectdesigner.engine.VisualizationEngine;
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
 import com.portkullis.projectdesigner.model.EdgeProperties;
+import com.portkullis.projectdesigner.model.Project;
 
 import java.util.*;
 import java.util.function.Function;
@@ -10,21 +11,21 @@ import java.util.function.Function;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-public class VisualizationEngineImpl<T, I> implements VisualizationEngine<T> {
+public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
 
-    private final Function<T, I> edgeIdentityMapper;
-    private final Function<T, Collection<T>> edgePrerequisiteMapper;
-    private final Function<T, EdgeProperties> edgePropertyMapper;
+    private final Function<A, I> edgeIdentityMapper;
+    private final Function<A, Collection<A>> edgePrerequisiteMapper;
+    private final Function<A, EdgeProperties> edgePropertyMapper;
 
-    public VisualizationEngineImpl(Function<T, I> edgeIdentityMapper, Function<T, Collection<T>> edgePrerequisiteMapper, Function<T, EdgeProperties> edgePropertyMapper) {
+    public VisualizationEngineImpl(Function<A, I> edgeIdentityMapper, Function<A, Collection<A>> edgePrerequisiteMapper, Function<A, EdgeProperties> edgePropertyMapper) {
         this.edgeIdentityMapper = edgeIdentityMapper;
         this.edgePrerequisiteMapper = edgePrerequisiteMapper;
         this.edgePropertyMapper = edgePropertyMapper;
     }
 
     @Override
-    public void visualizeUtilityData(Collection<T> utilityData) {
-        Graph<T> graph = new Graph<>();
+    public void visualizeProject(Project<A> project) {
+        Graph<A> graph = new Graph<>();
 
         IdGenerator nodeIdGenerator = new IdGenerator();
         IdGenerator edgeIdGenerator = new IdGenerator();
@@ -34,7 +35,7 @@ public class VisualizationEngineImpl<T, I> implements VisualizationEngine<T> {
 
         Map<I, Node> activityEndNodeMap = new HashMap<>();
 
-        for (T activity : utilityData) {
+        for (A activity : project.getUtilityData()) {
             long nodeId = nodeIdGenerator.getNextId();
             Node from = new Node(nodeId, "N" + nodeId);
             nodeId = nodeIdGenerator.getNextId();
@@ -49,7 +50,7 @@ public class VisualizationEngineImpl<T, I> implements VisualizationEngine<T> {
             graph.getEdges().add(new Edge<>(edgeIdGenerator.getNextId(), from, to, activity));
             graph.getEdges().add(new Edge<>(edgeIdGenerator.getNextId(), to, end));
 
-            for (T p : edgePrerequisiteMapper.apply(activity)) {
+            for (A p : edgePrerequisiteMapper.apply(activity)) {
                 graph.getEdges().add(new Edge<>(edgeIdGenerator.getNextId(), activityEndNodeMap.get(edgeIdentityMapper.apply(p)), from));
             }
         }
@@ -77,7 +78,7 @@ public class VisualizationEngineImpl<T, I> implements VisualizationEngine<T> {
         visualizeGraph(graph);
     }
 
-    private void labelChildrenNodes(Graph<T> graph, Node start, IdGenerator labelGenerator, Set<Long> labeledNodes) {
+    private void labelChildrenNodes(Graph<A> graph, Node start, IdGenerator labelGenerator, Set<Long> labeledNodes) {
         List<Node> exits = graph.getEdges().stream()
                 .filter(e -> e.getStart().equals(start))
                 .map(Edge::getEnd)
@@ -100,7 +101,7 @@ public class VisualizationEngineImpl<T, I> implements VisualizationEngine<T> {
     }
 
     @Override
-    public void visualizeGraph(Graph<T> graph) {
+    public void visualizeGraph(Graph<A> graph) {
         try {
             StringBuffer buffer = new StringBuffer();
             buffer.append("digraph {\n");
