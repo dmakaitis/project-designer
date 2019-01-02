@@ -13,7 +13,7 @@ public abstract class AbstractVisualizationSpike implements Runnable {
 
     private final VisualizationEngine<Activity> visualizationEngine;
 
-    private final Project<Activity> project = new Project<>();
+    private final Project<Activity, ?> project = new Project<>();
     private final Map<Integer, Activity> activityMap = new HashMap<>();
 
     AbstractVisualizationSpike(VisualizationEngine<Activity> visualizationEngine) {

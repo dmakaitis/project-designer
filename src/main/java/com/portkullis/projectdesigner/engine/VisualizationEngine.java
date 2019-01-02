@@ -9,6 +9,6 @@ import com.portkullis.projectdesigner.model.Project;
  */
 public interface VisualizationEngine<A> {
 
-    void visualizeProject(Project<A> project);
+    void visualizeProject(Project<A, ?> project);
 
 }

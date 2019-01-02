@@ -34,7 +34,7 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
     }
 
     @Override
-    public void visualizeProject(Project<A> project) {
+    public void visualizeProject(Project<A, ?> project) {
         Graph<A> graph = new Graph<>();
 
         IdGenerator nodeIdGenerator = new IdGenerator();

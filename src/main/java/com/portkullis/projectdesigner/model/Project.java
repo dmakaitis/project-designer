@@ -1,16 +1,21 @@
 package com.portkullis.projectdesigner.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * A software development project.
  *
  * @author darius
  */
-public class Project<A> {
+public class Project<A, R> {
 
     private List<A> utilityData;
+
+    private Map<String, Set<R>> resourceTypeMap;
+    private Set<R> resources;
+
+    private Map<A, Set<R>> activityAssignments;
+    private Map<R, SortedSet<A>> resourceAssignments;
 
     /**
      * Returns the utility data for the project.
@@ -22,6 +27,43 @@ public class Project<A> {
             utilityData = new ArrayList<>();
         }
         return utilityData;
+    }
+
+    /**
+     * Returns the collection of resources that may be used on the project.
+     *
+     * @return the collection of resources.
+     */
+    public Set<R> getResources() {
+        if (resources == null) {
+            resources = new HashSet<>();
+        }
+        return resources;
+    }
+
+    /**
+     * Returns a map of activities to resources assigned to each activity.
+     *
+     * @return an activity assignment map.
+     */
+    public Map<A, Set<R>> getActivityAssignments() {
+        if (activityAssignments == null) {
+            activityAssignments = new HashMap<>();
+        }
+        return activityAssignments;
+    }
+
+    /**
+     * Returns a map of resources to the activities to which they have been assigned. Activities are sorted in the order
+     * in which the resource will perform the activities.
+     *
+     * @return a resource assignment map.
+     */
+    public Map<R, SortedSet<A>> getResourceAssignments() {
+        if (resourceAssignments == null) {
+            resourceAssignments = new HashMap<>();
+        }
+        return resourceAssignments;
     }
 
 }
