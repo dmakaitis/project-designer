@@ -1,11 +1,17 @@
 package com.portkullis.projectdesigner;
 
 import com.portkullis.projectdesigner.engine.AssignmentEngine;
+import com.portkullis.projectdesigner.engine.CalculationEngine;
 import com.portkullis.projectdesigner.engine.VisualizationEngine;
+import com.portkullis.projectdesigner.engine.impl.AssignmentEngineImpl;
+import com.portkullis.projectdesigner.engine.impl.CalculationEngineImpl;
+import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
 import com.portkullis.projectdesigner.model.Activity;
+import com.portkullis.projectdesigner.model.EdgeProperties;
 import com.portkullis.projectdesigner.model.Project;
 
 import java.util.*;
+import java.util.function.Function;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
@@ -13,24 +19,67 @@ import static java.util.stream.Collectors.toSet;
 public abstract class AbstractVisualizationSpike implements Runnable {
 
     private final VisualizationEngine<Activity> visualizationEngine;
+    private final CalculationEngine<Activity> calculationEngine;
     private final AssignmentEngine<Activity, String> assignmentEngine;
 
     private final Project<Activity, String> project = new Project<>();
     private final Map<Integer, Activity> activityMap = new HashMap<>();
 
-    AbstractVisualizationSpike(VisualizationEngine<Activity> visualizationEngine, AssignmentEngine<Activity, String> assignmentEngine) {
-        this.visualizationEngine = visualizationEngine;
-        this.assignmentEngine = assignmentEngine;
+    AbstractVisualizationSpike() {
+        Function<Activity, Collection<Activity>> prerequisiteMapper = activity -> {
+            Set<Activity> prerequisites = project.getResourceAssignments().values().stream()
+                    .filter(a -> a.contains(activity))
+                    .flatMap(a -> a.headSet(activity).stream())
+                    .collect(toSet());
+            prerequisites.addAll(activity.getPrerequisites());
+
+//            if(isEmpty(project.getActivityAssignments().get(activity))) {
+//                System.out.println("Activity " + activity.getId() + " is unassigned...");
+//            }
+
+            return prerequisites;
+        };
+        Function<Activity, Collection<Activity>> directSuccessorMapper = activity -> project.getUtilityData().stream()
+                .filter(a -> prerequisiteMapper.apply(a).contains(activity))
+                .collect(toSet());
+
+        this.calculationEngine = new CalculationEngineImpl<>(prerequisiteMapper, directSuccessorMapper, Activity::getDuration);
+        Comparator<Activity> activitySorter = Comparator.comparing(calculationEngine::getEarliestEndTime).thenComparing(calculationEngine::getTotalFloat);
+
+        Function<Activity, EdgeProperties> edgePropertyMapper = activity -> new EdgeProperties(Long.toString(activity.getId()), activity.getDuration());
+        this.visualizationEngine = new VisualizationEngineImpl<>(Activity::getId, prerequisiteMapper, edgePropertyMapper);
+
+        this.assignmentEngine = new AssignmentEngineImpl<>(activitySorter);
     }
 
     protected abstract void defineActivities();
 
-    protected abstract void defineResources(Set<String> resources);
+    protected abstract void defineResources(Set<String> resources, Map<String, SortedSet<String>> resourceTypes);
+
+    protected abstract void assignResources();
 
     @Override
     public void run() {
+        System.out.println("Defining activities...");
         defineActivities();
-        defineResources(project.getResources());
+        System.out.println("Defining resources...");
+        defineResources(project.getResources(), project.getResourceTypes());
+        System.out.println("Assigning resources...");
+        assignResources();
+
+//        assignmentEngine.assignResources(project);
+
+//        project.getUtilityData().forEach(activity -> {
+//            System.out.println("Activity " + activity.getId() + " - " + activity.getDescription() + ":");
+//            System.out.println("          Start: " + calculationEngine.getEarliestStartTime(activity) + "/" + calculationEngine.getLatestStartTime(activity));
+//            System.out.println("            End: " + calculationEngine.getEarliestEndTime(activity) + "/" + calculationEngine.getLatestEndTime(activity));
+//            System.out.println("    Total Float: " + calculationEngine.getTotalFloat(activity));
+//        });
+//        project.getResourceAssignments().forEach((resource, activities) -> {
+//            System.out.print(resource + " =>");
+//            activities.forEach(activity -> System.out.print(" " + activity.getId()));
+//            System.out.println();
+//        });
 
         Date timerStart = new Date();
         try {
@@ -42,6 +91,10 @@ public abstract class AbstractVisualizationSpike implements Runnable {
     }
 
     void addActivity(int activityId, String description, int duration, Integer... prerequisites) {
+        addActivity(activityId, description, duration, null, prerequisites);
+    }
+
+    void addActivity(int activityId, String description, int duration, String type, Integer... prerequisites) {
         List<Integer> prerequisitesList = asList(prerequisites);
         Set<Activity> prereqs = activityMap.entrySet().stream()
                 .filter(e -> prerequisitesList.contains(e.getKey()))
@@ -56,6 +109,18 @@ public abstract class AbstractVisualizationSpike implements Runnable {
 
         activityMap.put(activityId, activity);
         project.getUtilityData().add(activity);
+
+        if (type != null) {
+            project.getActivityTypes().put(activity, type);
+        }
+    }
+
+    void assignResource(int activityId, String resource) {
+        assignmentEngine.assignResourceToActivity(project, resource, activityMap.get(activityId));
+    }
+
+    static boolean isEmpty(Collection<?> collection) {
+        return collection == null || collection.isEmpty();
     }
 
 }

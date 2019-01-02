@@ -1,19 +1,10 @@
 package com.portkullis.projectdesigner;
 
-import com.portkullis.projectdesigner.engine.impl.AssignmentEngineImpl;
-import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
-import com.portkullis.projectdesigner.model.Activity;
-import com.portkullis.projectdesigner.model.EdgeProperties;
-
+import java.util.Map;
 import java.util.Set;
-
-import static java.util.Comparator.comparing;
+import java.util.SortedSet;
 
 public class AmuiSpike extends AbstractVisualizationSpike {
-
-    private AmuiSpike() {
-        super(new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId()), a.getDuration())), new AssignmentEngineImpl<>(comparing(Activity::getDescription)));
-    }
 
     public static void main(String[] args) {
         new AmuiSpike().run();
@@ -84,7 +75,12 @@ public class AmuiSpike extends AbstractVisualizationSpike {
     }
 
     @Override
-    protected void defineResources(Set<String> resources) {
+    protected void defineResources(Set<String> resources, Map<String, SortedSet<String>> resourceTypes) {
+
+    }
+
+    @Override
+    protected void assignResources() {
 
     }
 

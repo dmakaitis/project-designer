@@ -4,9 +4,9 @@ import com.portkullis.projectdesigner.engine.AssignmentEngine;
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
 import com.portkullis.projectdesigner.model.Project;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.TreeSet;
+import java.util.*;
+
+import static java.util.stream.Collectors.toList;
 
 public class AssignmentEngineImpl<A, R> implements AssignmentEngine<A, R> {
 
@@ -18,7 +18,23 @@ public class AssignmentEngineImpl<A, R> implements AssignmentEngine<A, R> {
 
     @Override
     public void assignResources(Project<A, R> project) {
+        List<A> unassignedActivities = getUnassignedActivities(project);
+        while (!unassignedActivities.isEmpty()) {
+            A activity = unassignedActivities.get(0);
+            String resourceType = project.getActivityTypes().get(activity);
+            SortedSet<R> resources = project.getResourceTypes().get(resourceType);
+            assignResourceToActivity(project, resources.first(), activity);
 
+            unassignedActivities = getUnassignedActivities(project);
+        }
+    }
+
+    private List<A> getUnassignedActivities(Project<A, R> project) {
+        return project.getUtilityData()
+                .stream()
+                .filter(a -> isEmpty(project.getActivityAssignments().get(a)))
+                .sorted(activityComparator)
+                .collect(toList());
     }
 
     @Override
@@ -39,6 +55,10 @@ public class AssignmentEngineImpl<A, R> implements AssignmentEngine<A, R> {
             project.getResourceAssignments().put(resource, new TreeSet<>(activityComparator));
         }
         project.getResourceAssignments().get(resource).add(activity);
+    }
+
+    private static boolean isEmpty(Collection<?> collection) {
+        return collection == null || collection.isEmpty();
     }
 
 }

@@ -42,6 +42,7 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
         Node start = new Node(nodeIdGenerator.getNextId(), "Start");
         graph.getNodes().add(start);
 
+        Map<I, Node> activityStartNodeMap = new HashMap<>();
         Map<I, Node> activityEndNodeMap = new HashMap<>();
 
         for (A activity : project.getUtilityData()) {
@@ -50,10 +51,16 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
             nodeId = nodeIdGenerator.getNextId();
             Node to = new Node(nodeId, "N" + nodeId);
 
-            activityEndNodeMap.put(edgeIdentityMapper.apply(activity), to);
-
             graph.getNodes().add(from);
             graph.getNodes().add(to);
+
+            activityStartNodeMap.put(edgeIdentityMapper.apply(activity), from);
+            activityEndNodeMap.put(edgeIdentityMapper.apply(activity), to);
+        }
+
+        for (A activity : project.getUtilityData()) {
+            Node from = activityStartNodeMap.get(edgeIdentityMapper.apply(activity));
+            Node to = activityEndNodeMap.get(edgeIdentityMapper.apply(activity));
 
             graph.getEdges().add(new Edge<>(from, to, activity));
 
@@ -144,8 +151,6 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
                     EdgeProperties ep = edgePropertyMapper.apply(e.getData().get());
                     buffer.append(" [ label = \"")
                             .append(ep.getLabel())
-//                            .append(" - ")
-//                            .append(totalFloat)
                             .append("\"; ");
                 } else {
                     buffer.append(" [ style = dotted; ");

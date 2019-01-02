@@ -43,15 +43,12 @@ public class Activity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Activity activity = (Activity) o;
-        return id == activity.id &&
-                duration == activity.duration &&
-                Objects.equals(description, activity.description) &&
-                Objects.equals(predecessors, activity.predecessors);
+        return id == activity.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, description, duration, predecessors);
+        return Objects.hash(id);
     }
 
     public long getId() {
@@ -74,7 +71,7 @@ public class Activity {
         this.duration = duration;
     }
 
-    public Set<Activity> getPredecessors() {
+    public Set<Activity> getPrerequisites() {
         return predecessors;
     }
 

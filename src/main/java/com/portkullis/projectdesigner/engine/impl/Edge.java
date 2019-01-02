@@ -1,5 +1,7 @@
 package com.portkullis.projectdesigner.engine.impl;
 
+import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
+
 import java.util.Objects;
 import java.util.Optional;
 
@@ -32,6 +34,13 @@ public class Edge<T> {
      * @param data  the activity data.
      */
     public Edge(Node start, Node end, T data) {
+        if (start == null) {
+            throw new ProjectDesignerRuntimeException("Edges must always have a starting node");
+        }
+        if (end == null) {
+            throw new ProjectDesignerRuntimeException("Edges must always have an ending node");
+        }
+
         this.start = start;
         this.end = end;
         this.data = data;
