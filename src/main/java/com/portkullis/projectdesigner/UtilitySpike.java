@@ -1,13 +1,18 @@
 package com.portkullis.projectdesigner;
 
+import com.portkullis.projectdesigner.engine.impl.AssignmentEngineImpl;
 import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
 import com.portkullis.projectdesigner.model.Activity;
 import com.portkullis.projectdesigner.model.EdgeProperties;
 
+import java.util.Set;
+
+import static java.util.Comparator.comparing;
+
 public class UtilitySpike extends AbstractVisualizationSpike {
 
     private UtilitySpike() {
-        super(new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId()), a.getDuration())));
+        super(new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId()), a.getDuration())), new AssignmentEngineImpl<>(comparing(Activity::getDescription)));
     }
 
     public static void main(String[] args) {
@@ -37,6 +42,34 @@ public class UtilitySpike extends AbstractVisualizationSpike {
         addActivity(19, "Client App 1", 25, 17, 18);
         addActivity(20, "Client App 2", 35, 17);
         addActivity(21, "System Test", 30, 5, 19, 20);
+    }
+
+    @Override
+    protected void defineResources(Set<String> resources) {
+        resources.add("Project Manager");
+        resources.add("Product Manager");
+        resources.add("Architect");
+
+        resources.add("Developer 1");
+        resources.add("Developer 2");
+        resources.add("Developer 3");
+        resources.add("Developer 4");
+        resources.add("Developer 5");
+        resources.add("Developer 6");
+        resources.add("Developer 7");
+        resources.add("Developer 8");
+        resources.add("Developer 9");
+        resources.add("Developer 10");
+
+        resources.add("DBA 1");
+        resources.add("DBA 2");
+
+        resources.add("QA 1");
+        resources.add("QA 2");
+
+        resources.add("Test Engineer");
+
+        resources.add("Change Manager");
     }
 
 }

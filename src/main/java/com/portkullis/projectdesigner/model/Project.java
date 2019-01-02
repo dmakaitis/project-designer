@@ -11,6 +11,7 @@ public class Project<A, R> {
 
     private List<A> utilityData;
 
+    private Map<A, String> activityTypeMap;
     private Map<String, Set<R>> resourceTypeMap;
     private Set<R> resources;
 

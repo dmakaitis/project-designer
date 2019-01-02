@@ -1,5 +1,6 @@
 package com.portkullis.projectdesigner;
 
+import com.portkullis.projectdesigner.engine.AssignmentEngine;
 import com.portkullis.projectdesigner.engine.VisualizationEngine;
 import com.portkullis.projectdesigner.model.Activity;
 import com.portkullis.projectdesigner.model.Project;
@@ -12,19 +13,24 @@ import static java.util.stream.Collectors.toSet;
 public abstract class AbstractVisualizationSpike implements Runnable {
 
     private final VisualizationEngine<Activity> visualizationEngine;
+    private final AssignmentEngine<Activity, String> assignmentEngine;
 
-    private final Project<Activity, ?> project = new Project<>();
+    private final Project<Activity, String> project = new Project<>();
     private final Map<Integer, Activity> activityMap = new HashMap<>();
 
-    AbstractVisualizationSpike(VisualizationEngine<Activity> visualizationEngine) {
+    AbstractVisualizationSpike(VisualizationEngine<Activity> visualizationEngine, AssignmentEngine<Activity, String> assignmentEngine) {
         this.visualizationEngine = visualizationEngine;
+        this.assignmentEngine = assignmentEngine;
     }
 
     protected abstract void defineActivities();
 
+    protected abstract void defineResources(Set<String> resources);
+
     @Override
     public void run() {
         defineActivities();
+        defineResources(project.getResources());
 
         Date timerStart = new Date();
         try {

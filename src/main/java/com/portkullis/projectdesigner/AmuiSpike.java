@@ -1,13 +1,18 @@
 package com.portkullis.projectdesigner;
 
+import com.portkullis.projectdesigner.engine.impl.AssignmentEngineImpl;
 import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
 import com.portkullis.projectdesigner.model.Activity;
 import com.portkullis.projectdesigner.model.EdgeProperties;
 
+import java.util.Set;
+
+import static java.util.Comparator.comparing;
+
 public class AmuiSpike extends AbstractVisualizationSpike {
 
     private AmuiSpike() {
-        super(new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId()), a.getDuration())));
+        super(new VisualizationEngineImpl<>(Activity::getId, Activity::getPredecessors, a -> new EdgeProperties(Long.toString(a.getId()), a.getDuration())), new AssignmentEngineImpl<>(comparing(Activity::getDescription)));
     }
 
     public static void main(String[] args) {
@@ -76,6 +81,11 @@ public class AmuiSpike extends AbstractVisualizationSpike {
         addActivity(49, "Milestone 1 - Identity Provider and User Admin Client", 30, 47, 51);
 
         addActivity(45, "Deployment", 30, 43, 44, 51, 49);
+    }
+
+    @Override
+    protected void defineResources(Set<String> resources) {
+
     }
 
 }
