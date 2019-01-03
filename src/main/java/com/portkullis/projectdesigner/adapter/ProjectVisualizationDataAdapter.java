@@ -4,10 +4,7 @@ import com.portkullis.projectdesigner.engine.VisualizationEngine;
 import com.portkullis.projectdesigner.engine.impl.Edge;
 import com.portkullis.projectdesigner.engine.impl.Graph;
 import com.portkullis.projectdesigner.engine.impl.Node;
-import com.portkullis.projectdesigner.model.Activity;
-import com.portkullis.projectdesigner.model.EdgeProperties;
-import com.portkullis.projectdesigner.model.Project;
-import com.portkullis.projectdesigner.model.Span;
+import com.portkullis.projectdesigner.model.*;
 
 import java.util.*;
 
@@ -25,11 +22,11 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
 
     private final Project<Activity, R> project;
 
-    private final transient Map<Activity, VisualizationEngine.ActivityData> activityDataMap = new HashMap<>();
+    private final Map<Activity, VisualizationEngine.ActivityData> activityDataMap = new HashMap<>();
 
     private final Map<Activity, Node> activityNodes = new HashMap<>();
     private final Map<Node, Activity> nodeActivities = new HashMap<>();
-    private Graph<Object> activityGraph = null;
+    private Graph<VisualizationEngine.ActivityData> activityGraph = null;
 
     /**
      * Constructs the adapter.
@@ -61,27 +58,25 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
     }
 
     @Override
-    public List<Span<VisualizationEngine.ActivityData>> getResourceTypeOccupiedSpans(String resourceType) {
+    public SpanSet<VisualizationEngine.ActivityData> getResourceTypeOccupiedSpans(String resourceType) {
         SortedSet<R> resources = project.getResourceTypes().get(resourceType);
-        Map<R, List<Span<VisualizationEngine.ActivityData>>> resourceSpans = resources.stream().collect(toMap(identity(), r -> project.getActivityAssignments().entrySet().stream()
+        Map<R, SpanSet<VisualizationEngine.ActivityData>> resourceSpans = resources.stream().collect(toMap(identity(), r -> project.getActivityAssignments().entrySet().stream()
                 .filter(e -> e.getValue().contains(r))
                 .map(Map.Entry::getKey)
                 .map(this::wrapActivity)
                 .sorted(comparing(VisualizationEngine.ActivityData::getEarlyStart).thenComparing(VisualizationEngine.ActivityData::getLateStart))
                 .map(a -> new Span<>(a.getEarlyStart(), a.getEarlyStart() + a.getDuration(), a))
-                .collect(toList())
+                .reduce(new SpanSet<>(), SpanSet::getUnion, SpanSet::getUnion)
         ));
 
-        System.out.println(resourceSpans);
-
-        return resourceSpans.values().stream().findFirst().orElse(new ArrayList<>());
+        return resourceSpans.values().stream().findFirst().orElse(new SpanSet<>());
     }
 
     private VisualizationEngine.ActivityData wrapActivity(Activity activity) {
         return activityDataMap.computeIfAbsent(activity, ActivityVisualizationDataAdapter::new);
     }
 
-    public Graph<Object> getActivityGraph() {
+    public Graph<VisualizationEngine.ActivityData> getActivityGraph() {
         if (activityGraph == null) {
             activityNodes.clear();
             nodeActivities.clear();
@@ -98,14 +93,12 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
 
             // Now add edges for the utility data prerequisites
             project.getUtilityData().forEach(a -> {
-                Node activityNode = activityNodes.get(a);
                 a.getPrerequisites().forEach(p -> {
-                    Node prerequisiteNode = activityNodes.get(p);
-                    activityGraph.getEdges().add(new Edge<>(prerequisiteNode, activityNode));
+                    addEdge(p, a);
                 });
             });
 
-            // TODO: Add edges for resource dependencies
+            // Add edges for the resource dependencies
             project.getResources().forEach(r -> {
                 project.getActivityAssignments().entrySet().stream()
                         .filter(e -> e.getValue().contains(r))
@@ -113,19 +106,59 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
                         .sorted(comparing(a -> getEarlyStartFromGraph(activityGraph, a)))
                         .reduce(null, (p, a) -> {
                             if (p != null) {
-                                Node previous = activityNodes.get(p);
-                                Node next = activityNodes.get(a);
-                                activityGraph.getEdges().add(new Edge<>(previous, next));
+                                addEdge(p, a);
                             }
                             return a;
                         });
+            });
+
+            project.getResourceTypes().forEach((t, r) -> {
+                SpanSet<VisualizationEngine.ActivityData> occupiedSpans = getResourceTypeOccupiedSpans(t);
+                List<Activity> unassignedActivities = project.getUtilityData().stream()
+                        .filter(a -> t.equals(project.getActivityTypes().get(a)))
+                        .filter(a -> project.getActivityAssignments().get(a) == null)
+                        .collect(toList());
+
+                Activity prereq = null;
+                for (Activity activity : unassignedActivities) {
+                    int earlyStart = getEarlyStartFromGraph(activityGraph, activity);
+                    occupiedSpans.getSpans().stream()
+                            .filter(s -> s.getStart() <= earlyStart)
+                            .filter(s -> s.getEnd() >= earlyStart)
+                            .findFirst()
+                            .ifPresent(s -> addEdge(s.getEndActivity().getActivity(), activity));
+                }
             });
         }
 
         return activityGraph;
     }
 
-    private int getEarlyStartFromGraph(Graph<Object> activityGraph, Activity activity) {
+    private void addEdge(Activity a, Activity b) {
+        Node nodeA = activityNodes.get(a);
+        Node nodeB = activityNodes.get(b);
+
+        if (!getAllPredecessors(nodeA).contains(nodeB)) {
+            activityGraph.getEdges().add(new Edge<>(nodeA, nodeB));
+        }
+    }
+
+    private Set<Node> getAllPredecessors(Node node) {
+        Set<Node> directPredecessors = activityGraph.getEdges().stream()
+                .filter(e -> e.getEnd().equals(node))
+                .map(Edge::getStart)
+                .collect(toSet());
+
+        Set<Node> predecessors = new HashSet<>();
+        for (Node directPredecessor : directPredecessors) {
+            predecessors.add(directPredecessor);
+            predecessors.addAll(getAllPredecessors(directPredecessor));
+        }
+
+        return predecessors;
+    }
+
+    private int getEarlyStartFromGraph(Graph<VisualizationEngine.ActivityData> activityGraph, Activity activity) {
         Node node = activityNodes.get(activity);
         return activityGraph.getEdges().stream()
                 .filter(e -> e.getEnd().equals(node))
@@ -133,7 +166,7 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
                     Activity prereq = nodeActivities.get(e.getStart());
                     return getEarlyStartFromGraph(activityGraph, prereq) + prereq.getDuration();
                 })
-                .min()
+                .max()
                 .orElse(0);
     }
 
@@ -143,6 +176,13 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
 
         private ActivityVisualizationDataAdapter(Activity activity) {
             this.activity = activity;
+        }
+
+        @Override
+        public String toString() {
+            return "ActivityVisualizationDataAdapter{" +
+                    "activity=" + activity +
+                    '}';
         }
 
         @Override
@@ -156,6 +196,11 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
         @Override
         public int hashCode() {
             return Objects.hash(activity);
+        }
+
+        @Override
+        public Activity getActivity() {
+            return activity;
         }
 
         @Override

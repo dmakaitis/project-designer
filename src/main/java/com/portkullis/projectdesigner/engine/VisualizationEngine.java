@@ -1,11 +1,11 @@
 package com.portkullis.projectdesigner.engine;
 
 import com.portkullis.projectdesigner.engine.impl.Graph;
+import com.portkullis.projectdesigner.model.Activity;
 import com.portkullis.projectdesigner.model.EdgeProperties;
-import com.portkullis.projectdesigner.model.Span;
+import com.portkullis.projectdesigner.model.SpanSet;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Engine for creating project visualizations.
@@ -45,7 +45,7 @@ public interface VisualizationEngine {
          * @param resourceType the resource type.
          * @return the spans of time during which all resources of the given type are fully occupied.
          */
-        List<Span<VisualizationEngine.ActivityData>> getResourceTypeOccupiedSpans(String resourceType);
+        SpanSet<ActivityData> getResourceTypeOccupiedSpans(String resourceType);
 
     }
 
@@ -53,6 +53,13 @@ public interface VisualizationEngine {
      * Interface to activity data required by the visualization engine.
      */
     interface ActivityData {
+
+        /**
+         * Returns the underlying activity.
+         *
+         * @return the underlying activity.
+         */
+        Activity getActivity();
 
         /**
          * Returns the duration of the activity.

@@ -33,7 +33,6 @@ public class Activity {
         sb.append("id=").append(id);
         sb.append(", description='").append(description).append('\'');
         sb.append(", duration=").append(duration);
-        sb.append(", predecessors=").append(predecessors);
         sb.append('}');
         return sb.toString();
     }

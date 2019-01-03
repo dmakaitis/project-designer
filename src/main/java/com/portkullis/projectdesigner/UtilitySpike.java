@@ -118,9 +118,9 @@ public class UtilitySpike extends AbstractVisualizationSpike {
 //        assignResource(15, "Developer 1");
 //        assignResource(14, "Developer 1");
 //        assignResource(17, "Developer 1");
-//        assignResource(18, "Developer 1");
-//        assignResource(20, "Developer 1");
-//        assignResource(19, "Developer 1");
+        assignResource(18, "Developer 1");
+        assignResource(20, "Developer 1");
+        assignResource(19, "Developer 1");
     }
 
 }
