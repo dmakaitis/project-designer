@@ -1,13 +1,12 @@
 package com.portkullis.projectdesigner.engine.impl
 
-
+import com.portkullis.projectdesigner.engine.AssignmentEngine
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException
-import com.portkullis.projectdesigner.model.Project
 import spock.lang.Specification
 
 class AssignmentEngineImplTest extends Specification {
 
-    def static engine = new AssignmentEngineImpl<String, String>({ a, b -> a.compareTo(b) })
+    def static engine = new AssignmentEngineImpl<String, String>()
 
     def static activity1 = "Activity 1"
     def static activity2 = "Activity 2"
@@ -17,16 +16,11 @@ class AssignmentEngineImplTest extends Specification {
     def static dev2 = "Developer 2"
     def static dev3 = "Developer 3"
 
-    def project = new Project<String>()
+    def project = Mock(AssignmentEngine.ProjectData)
 
     void setup() {
-        project.utilityData << activity1
-        project.utilityData << activity2
-        project.utilityData << activity3
-
-        project.resources << dev1
-        project.resources << dev2
-        project.resources << dev3
+        project.getActivities() >> [activity1, activity2, activity3]
+        project.getResources() >> [dev1, dev2, dev3]
     }
 
     def "Assigning a non-existant resource to a project should fail"() {
@@ -50,7 +44,7 @@ class AssignmentEngineImplTest extends Specification {
         engine.assignResourceToActivity(project, dev1, activity1)
 
         then:
-        project.activityAssignments[activity1].contains(dev1)
+        1 * project.assignActivityToResource(activity1, dev1)
     }
 
     def "Assigning multiple resources to an activity for a project should put all those resources into the activity's assignment map for the project"() {
@@ -59,8 +53,8 @@ class AssignmentEngineImplTest extends Specification {
         engine.assignResourceToActivity(project, dev2, activity1)
 
         then:
-        project.activityAssignments[activity1].contains(dev1)
-        project.activityAssignments[activity1].contains(dev2)
+        1 * project.assignActivityToResource(activity1, dev1)
+        1 * project.assignActivityToResource(activity1, dev2)
     }
 
     def "Assigning a resource to an activity for a project should put that activity into the resources's assignment map for the project"() {
@@ -68,7 +62,7 @@ class AssignmentEngineImplTest extends Specification {
         engine.assignResourceToActivity(project, dev1, activity1)
 
         then:
-        project.resourceAssignments[dev1].contains(activity1)
+        1 * project.assignActivityToResource(activity1, dev1)
     }
 
     def "Assigning a resource to multiple activities for a project should put those activities into the resources's assignment map for the project"() {
@@ -77,7 +71,8 @@ class AssignmentEngineImplTest extends Specification {
         engine.assignResourceToActivity(project, dev1, activity2)
 
         then:
-        project.resourceAssignments[dev1].containsAll([activity1, activity2])
+        1 * project.assignActivityToResource(activity1, dev1)
+        1 * project.assignActivityToResource(activity2, dev1)
     }
 
     def "Activities in a resource assignment map must always be sorted in order"() {
@@ -87,7 +82,9 @@ class AssignmentEngineImplTest extends Specification {
         engine.assignResourceToActivity(project, dev1, activity2)
 
         then:
-        project.resourceAssignments[dev1].asList() == [activity1, activity2, activity3]
+        1 * project.assignActivityToResource(activity1, dev1)
+        1 * project.assignActivityToResource(activity2, dev1)
+        1 * project.assignActivityToResource(activity3, dev1)
     }
 
 }

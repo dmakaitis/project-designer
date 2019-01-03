@@ -16,7 +16,7 @@ public class Project<A, R> {
     private Set<R> resources;
 
     private Map<A, Set<R>> activityAssignments;
-    private Map<R, SortedSet<A>> resourceAssignments;
+//    private Map<R, SortedSet<A>> resourceAssignments;
 
     /**
      * Returns the utility data for the project.
@@ -78,17 +78,17 @@ public class Project<A, R> {
         return activityAssignments;
     }
 
-    /**
-     * Returns a map of resources to the activities to which they have been assigned. Activities are sorted in the order
-     * in which the resource will perform the activities.
-     *
-     * @return a resource assignment map.
-     */
-    public Map<R, SortedSet<A>> getResourceAssignments() {
-        if (resourceAssignments == null) {
-            resourceAssignments = new HashMap<>();
-        }
-        return resourceAssignments;
-    }
+//    /**
+//     * Returns a map of resources to the activities to which they have been assigned. Activities are sorted in the order
+//     * in which the resource will perform the activities.
+//     *
+//     * @return a resource assignment map.
+//     */
+//    public Map<R, SortedSet<A>> getResourceAssignments() {
+//        if (resourceAssignments == null) {
+//            resourceAssignments = new HashMap<>();
+//        }
+//        return resourceAssignments;
+//    }
 
 }

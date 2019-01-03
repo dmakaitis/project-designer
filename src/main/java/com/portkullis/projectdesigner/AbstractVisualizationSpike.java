@@ -1,5 +1,6 @@
 package com.portkullis.projectdesigner;
 
+import com.portkullis.projectdesigner.adapter.ProjectDataAdapter;
 import com.portkullis.projectdesigner.engine.AssignmentEngine;
 import com.portkullis.projectdesigner.engine.CalculationEngine;
 import com.portkullis.projectdesigner.engine.VisualizationEngine;
@@ -25,31 +26,34 @@ public abstract class AbstractVisualizationSpike implements Runnable {
     private final Project<Activity, String> project = new Project<>();
     private final Map<Integer, Activity> activityMap = new HashMap<>();
 
+    private AssignmentEngine.ProjectData<Activity, String> projectData = new ProjectDataAdapter<>(project);
+
     AbstractVisualizationSpike() {
         Function<Activity, Collection<Activity>> prerequisiteMapper = activity -> {
-            Set<Activity> prerequisites = project.getResourceAssignments().values().stream()
-                    .filter(a -> a.contains(activity))
-                    .flatMap(a -> a.headSet(activity).stream())
-                    .collect(toSet());
-            prerequisites.addAll(activity.getPrerequisites());
-
-//            if(isEmpty(project.getActivityAssignments().get(activity))) {
-//                System.out.println("Activity " + activity.getId() + " is unassigned...");
-//            }
-
-            return prerequisites;
+//            Set<Activity> prerequisites = project.getResourceAssignments().values().stream()
+//                    .filter(a -> a.contains(activity))
+//                    .flatMap(a -> a.headSet(activity).stream())
+//                    .collect(toSet());
+//            prerequisites.addAll(activity.getPrerequisites());
+//
+////            if(isEmpty(project.getActivityAssignments().get(activity))) {
+////                System.out.println("Activity " + activity.getId() + " is unassigned...");
+////            }
+//
+//            return prerequisites;
+            return activity.getPrerequisites();
         };
         Function<Activity, Collection<Activity>> directSuccessorMapper = activity -> project.getUtilityData().stream()
                 .filter(a -> prerequisiteMapper.apply(a).contains(activity))
                 .collect(toSet());
 
         this.calculationEngine = new CalculationEngineImpl<>(prerequisiteMapper, directSuccessorMapper, Activity::getDuration);
-        Comparator<Activity> activitySorter = Comparator.comparing(calculationEngine::getEarliestEndTime).thenComparing(calculationEngine::getTotalFloat);
+//        Comparator<Activity> activitySorter = Comparator.comparing(calculationEngine::getEarliestEndTime).thenComparing(calculationEngine::getTotalFloat);
 
         Function<Activity, EdgeProperties> edgePropertyMapper = activity -> new EdgeProperties(Long.toString(activity.getId()), activity.getDuration());
         this.visualizationEngine = new VisualizationEngineImpl<>(Activity::getId, prerequisiteMapper, edgePropertyMapper);
 
-        this.assignmentEngine = new AssignmentEngineImpl<>(activitySorter);
+        this.assignmentEngine = new AssignmentEngineImpl<>();
     }
 
     protected abstract void defineActivities();
@@ -69,12 +73,12 @@ public abstract class AbstractVisualizationSpike implements Runnable {
 
 //        assignmentEngine.assignResources(project);
 
-//        project.getUtilityData().forEach(activity -> {
-//            System.out.println("Activity " + activity.getId() + " - " + activity.getDescription() + ":");
+        project.getUtilityData().forEach(activity -> {
+            System.out.println("Activity " + activity.getId() + " - " + activity.getDescription() + ": " + project.getActivityAssignments().get(activity));
 //            System.out.println("          Start: " + calculationEngine.getEarliestStartTime(activity) + "/" + calculationEngine.getLatestStartTime(activity));
 //            System.out.println("            End: " + calculationEngine.getEarliestEndTime(activity) + "/" + calculationEngine.getLatestEndTime(activity));
 //            System.out.println("    Total Float: " + calculationEngine.getTotalFloat(activity));
-//        });
+        });
 //        project.getResourceAssignments().forEach((resource, activities) -> {
 //            System.out.print(resource + " =>");
 //            activities.forEach(activity -> System.out.print(" " + activity.getId()));
@@ -116,7 +120,7 @@ public abstract class AbstractVisualizationSpike implements Runnable {
     }
 
     void assignResource(int activityId, String resource) {
-        assignmentEngine.assignResourceToActivity(project, resource, activityMap.get(activityId));
+        projectData.assignActivityToResource(activityMap.get(activityId), resource);
     }
 
     static boolean isEmpty(Collection<?> collection) {

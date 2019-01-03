@@ -2,6 +2,8 @@ package com.portkullis.projectdesigner.engine;
 
 import com.portkullis.projectdesigner.model.Project;
 
+import java.util.Collection;
+
 /**
  * Methods for assigning resources to activities in a project.
  *
@@ -27,6 +29,38 @@ public interface AssignmentEngine<A, R> {
      * @param resource the resource to assign.
      * @param activity the activity to which to assign the resource.
      */
-    void assignResourceToActivity(Project<A, R> project, R resource, A activity);
+    void assignResourceToActivity(ProjectData<A, R> project, R resource, A activity);
+
+    /**
+     * Expected project interface.
+     *
+     * @param <A> the project activity type.
+     * @param <R> the project resource type.
+     */
+    interface ProjectData<A, R> {
+
+        /**
+         * Returns the resources that are defined for the project.
+         *
+         * @return the resources that are defined for the project.
+         */
+        Collection<R> getResources();
+
+        /**
+         * Returns the activities that are defined for the project.
+         *
+         * @return the activities that are defined for the project.
+         */
+        Collection<A> getActivities();
+
+        /**
+         * Assigns an activity to a resource. An activity may be assigned to more than one resource.
+         *
+         * @param activity the activity to assign.
+         * @param resource the resource to which to assign the activity.
+         */
+        void assignActivityToResource(A activity, R resource);
+
+    }
 
 }
