@@ -58,7 +58,8 @@ public abstract class AbstractVisualizationSpike implements Runnable {
 
         Date timerStart = new Date();
         try {
-            visualizationEngine.visualizeProject(new ProjectVisualizationDataAdapter(project));
+            visualizationEngine.visualizeProject(new ProjectVisualizationDataAdapter<>(project));
+//            visualizationEngine.visualizeGraph(new ProjectVisualizationDataAdapter<>(project).getActivityGraph());
         } finally {
             Date timerStop = new Date();
             System.out.println("Graph calculated in " + (timerStop.getTime() - timerStart.getTime()) + "ms");

@@ -74,7 +74,7 @@ public class Edge<T> {
      *
      * @return the starting node.
      */
-    Node getStart() {
+    public Node getStart() {
         return start;
     }
 
@@ -83,7 +83,7 @@ public class Edge<T> {
      *
      * @return the ending node.
      */
-    Node getEnd() {
+    public Node getEnd() {
         return end;
     }
 
@@ -92,7 +92,7 @@ public class Edge<T> {
      *
      * @return the activity data.
      */
-    Optional<T> getData() {
+    public Optional<T> getData() {
         return Optional.ofNullable(data);
     }
 

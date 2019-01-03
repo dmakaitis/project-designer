@@ -25,7 +25,7 @@ public class Node implements Comparable<Node> {
      * @param id    the node ID.
      * @param label the node label.
      */
-    Node(long id, String label) {
+    public Node(long id, String label) {
         this(id);
         this.label = label;
     }

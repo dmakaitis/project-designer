@@ -1,15 +1,30 @@
 package com.portkullis.projectdesigner.engine;
 
+import com.portkullis.projectdesigner.engine.impl.Graph;
 import com.portkullis.projectdesigner.model.EdgeProperties;
+import com.portkullis.projectdesigner.model.Span;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Engine for creating project visualizations.
  */
 public interface VisualizationEngine {
 
+    /**
+     * Visualizes a project as an arrow diagram.
+     *
+     * @param project the project data.
+     */
     void visualizeProject(ProjectData project);
+
+    /**
+     * Visualizes a graph.
+     *
+     * @param graph the graph to visualize.
+     */
+    void visualizeGraph(Graph<ActivityData> graph);
 
     /**
      * Interface to project data required by the visualization engine.
@@ -22,6 +37,15 @@ public interface VisualizationEngine {
          * @return all the activities in the project.
          */
         Collection<ActivityData> getActivities();
+
+        /**
+         * Returns the spans of time during which all the resources of the given resource type are fully occupied during
+         * the project.
+         *
+         * @param resourceType the resource type.
+         * @return the spans of time during which all resources of the given type are fully occupied.
+         */
+        List<Span<VisualizationEngine.ActivityData>> getResourceTypeOccupiedSpans(String resourceType);
 
     }
 
@@ -64,6 +88,13 @@ public interface VisualizationEngine {
          * @return the edge properties for the activity.
          */
         EdgeProperties getEdgeProperties();
+
+//        /**
+//         * Returns the type of resource that must perform this activity.
+//         *
+//         * @return the type of resource that must perform this activity, or {@code null} if any resource can perform this activity.
+//         */
+//        String getActivityResourceType();
 
     }
 

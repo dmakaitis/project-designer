@@ -128,7 +128,8 @@ public class VisualizationEngineImpl implements VisualizationEngine {
         exits.forEach(n -> labelChildrenNodes(graph, n, labelGenerator, labeledNodes));
     }
 
-    private void visualizeGraph(Graph<ActivityData> graph) {
+    @Override
+    public void visualizeGraph(Graph<ActivityData> graph) {
         FloatCalculator floatCalculator = new FloatCalculator(graph);
         Map<Node, Integer> nodeFloatMap = new HashMap<>();
 
