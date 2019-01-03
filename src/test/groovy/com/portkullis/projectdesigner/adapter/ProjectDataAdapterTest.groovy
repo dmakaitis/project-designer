@@ -15,7 +15,7 @@ class ProjectDataAdapterTest extends Specification {
     def static dev3 = "Developer 3"
 
     def project = new Project<String, String>()
-    def adapter = new ProjectDataAdapter(project)
+    def adapter = new ProjectAssignmentDataAdapter(project)
 
     def "Retrieving the resources for a project should return a collection of those resources"() {
         expect:

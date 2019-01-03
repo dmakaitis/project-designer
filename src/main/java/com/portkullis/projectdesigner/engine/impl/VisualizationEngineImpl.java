@@ -3,87 +3,92 @@ package com.portkullis.projectdesigner.engine.impl;
 import com.portkullis.projectdesigner.engine.VisualizationEngine;
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
 import com.portkullis.projectdesigner.model.EdgeProperties;
-import com.portkullis.projectdesigner.model.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * Implementation of a project visualization engine.
- *
- * @param <A> the activity type.
- * @param <I> the activity identifier type.
  */
-public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
+public class VisualizationEngineImpl implements VisualizationEngine {
 
     private static final Logger LOG = LoggerFactory.getLogger(VisualizationEngine.class);
 
-    private final Function<A, I> edgeIdentityMapper;
-    private final Function<A, Collection<A>> edgePrerequisiteMapper;
-    private final Function<A, EdgeProperties> edgePropertyMapper;
-
-    public VisualizationEngineImpl(Function<A, I> edgeIdentityMapper, Function<A, Collection<A>> edgePrerequisiteMapper, Function<A, EdgeProperties> edgePropertyMapper) {
-        this.edgeIdentityMapper = edgeIdentityMapper;
-        this.edgePrerequisiteMapper = edgePrerequisiteMapper;
-        this.edgePropertyMapper = edgePropertyMapper;
-    }
-
     @Override
-    public void visualizeProject(Project<A, ?> project) {
-        Graph<A> graph = new Graph<>();
+    public void visualizeProject(ProjectData project) {
+        Graph<ActivityData> graph = new Graph<>();
 
         IdGenerator nodeIdGenerator = new IdGenerator();
 
-        Node start = new Node(nodeIdGenerator.getNextId(), "Start");
+        Map<ActivityData, Node> activityStartNodeMap = new HashMap<>();
+        Map<ActivityData, Node> activityEndNodeMap = new HashMap<>();
+
+        Node start = createGraphNode(graph, nodeIdGenerator, "Start");
+
+        createActivityEdges(project, graph, nodeIdGenerator, activityStartNodeMap, activityEndNodeMap);
+
+        createDependencyEdges(project, graph, start, activityStartNodeMap, activityEndNodeMap);
+
+        createProjectFinishEdges(graph, nodeIdGenerator);
+
+        graph.simplifyDummies();
+
+        labelNodes(graph);
+
+        visualizeGraph(graph);
+    }
+
+    private static Node createGraphNode(Graph<ActivityData> graph, IdGenerator nodeIdGenerator, String start2) {
+        Node start = new Node(nodeIdGenerator.getNextId(), start2);
         graph.getNodes().add(start);
+        return start;
+    }
 
-        Map<I, Node> activityStartNodeMap = new HashMap<>();
-        Map<I, Node> activityEndNodeMap = new HashMap<>();
+    private static void createActivityEdges(ProjectData project, Graph<ActivityData> graph, IdGenerator nodeIdGenerator, Map<ActivityData, Node> activityStartNodeMap, Map<ActivityData, Node> activityEndNodeMap) {
+        for (ActivityData activity : project.getActivities()) {
+            Node from = new Node(nodeIdGenerator.getNextId(), "N" + nodeIdGenerator.getNextId());
+            Node to = new Node(nodeIdGenerator.getNextId(), "N" + nodeIdGenerator.getNextId());
 
-        for (A activity : project.getUtilityData()) {
-            long nodeId = nodeIdGenerator.getNextId();
-            Node from = new Node(nodeId, "N" + nodeId);
-            nodeId = nodeIdGenerator.getNextId();
-            Node to = new Node(nodeId, "N" + nodeId);
+            activityStartNodeMap.put(activity, from);
+            activityEndNodeMap.put(activity, to);
 
             graph.getNodes().add(from);
             graph.getNodes().add(to);
 
-            activityStartNodeMap.put(edgeIdentityMapper.apply(activity), from);
-            activityEndNodeMap.put(edgeIdentityMapper.apply(activity), to);
-        }
-
-        for (A activity : project.getUtilityData()) {
-            Node from = activityStartNodeMap.get(edgeIdentityMapper.apply(activity));
-            Node to = activityEndNodeMap.get(edgeIdentityMapper.apply(activity));
-
             graph.getEdges().add(new Edge<>(from, to, activity));
+        }
+    }
 
-            Collection<A> prerequisites = edgePrerequisiteMapper.apply(activity);
+    private static void createDependencyEdges(ProjectData project, Graph<ActivityData> graph, Node start, Map<ActivityData, Node> activityStartNodeMap, Map<ActivityData, Node> activityEndNodeMap) {
+        for (ActivityData activity : project.getActivities()) {
+            Node from = activityStartNodeMap.get(activity);
+
+            Collection<ActivityData> prerequisites = activity.getPrerequisites();
             if (prerequisites.isEmpty()) {
                 graph.getEdges().add(new Edge<>(start, from));
             } else {
-                for (A p : prerequisites) {
-                    graph.getEdges().add(new Edge<>(activityEndNodeMap.get(edgeIdentityMapper.apply(p)), from));
+                for (ActivityData p : prerequisites) {
+                    graph.getEdges().add(new Edge<>(activityEndNodeMap.get(p), from));
                 }
             }
         }
+    }
 
-        Node end = new Node(nodeIdGenerator.getNextId(), "End");
-        graph.getNodes().add(end);
+    private static void createProjectFinishEdges(Graph<ActivityData> graph, IdGenerator nodeIdGenerator) {
+        Node end = createGraphNode(graph, nodeIdGenerator, "End");
         for (Node terminalNode : graph.getTerminalNodes()) {
             if (!terminalNode.equals(end)) {
                 graph.getEdges().add(new Edge<>(terminalNode, end));
             }
         }
+    }
 
-        graph.simplifyDummies();
-
+    private static void labelNodes(Graph<ActivityData> graph) {
+        Node start;
         Set<Node> startNodes = graph.getStartNodes();
         if (startNodes.size() != 1) {
             throw new ProjectDesignerRuntimeException("A project must have exactly one starting activity. Project has " + startNodes.size() + " start activities.");
@@ -101,11 +106,9 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
             throw new ProjectDesignerRuntimeException("A project must have exactly one ending activity.");
         }
         terminalNodes.forEach(n -> n.setLabel("End"));
-
-        visualizeGraph(graph);
     }
 
-    private void labelChildrenNodes(Graph<A> graph, Node start, IdGenerator labelGenerator, Set<Long> labeledNodes) {
+    private static void labelChildrenNodes(Graph<ActivityData> graph, Node start, IdGenerator labelGenerator, Set<Long> labeledNodes) {
         List<Node> exits = graph.getEdges().stream()
                 .filter(e -> e.getStart().equals(start))
                 .map(Edge::getEnd)
@@ -125,8 +128,8 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
         exits.forEach(n -> labelChildrenNodes(graph, n, labelGenerator, labeledNodes));
     }
 
-    private void visualizeGraph(Graph<A> graph) {
-        FloatCalculator<A> floatCalculator = new FloatCalculator<>(graph, edgePropertyMapper);
+    private void visualizeGraph(Graph<ActivityData> graph) {
+        FloatCalculator floatCalculator = new FloatCalculator(graph);
         Map<Node, Integer> nodeFloatMap = new HashMap<>();
 
         int maxTotalFloat = graph.getEdges().stream()
@@ -148,7 +151,7 @@ public class VisualizationEngineImpl<A, I> implements VisualizationEngine<A> {
 
                 buffer.append("    ").append(e.getStart().getLabel()).append(" -> ").append(e.getEnd().getLabel());
                 if (e.getData().isPresent()) {
-                    EdgeProperties ep = edgePropertyMapper.apply(e.getData().get());
+                    EdgeProperties ep = e.getData().get().getEdgeProperties();
                     buffer.append(" [ label = \"")
                             .append(ep.getLabel())
                             .append("\"; ");

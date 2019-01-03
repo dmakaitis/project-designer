@@ -1,6 +1,7 @@
 package com.portkullis.projectdesigner;
 
-import com.portkullis.projectdesigner.adapter.ProjectDataAdapter;
+import com.portkullis.projectdesigner.adapter.ProjectAssignmentDataAdapter;
+import com.portkullis.projectdesigner.adapter.ProjectVisualizationDataAdapter;
 import com.portkullis.projectdesigner.engine.AssignmentEngine;
 import com.portkullis.projectdesigner.engine.CalculationEngine;
 import com.portkullis.projectdesigner.engine.VisualizationEngine;
@@ -8,39 +9,23 @@ import com.portkullis.projectdesigner.engine.impl.AssignmentEngineImpl;
 import com.portkullis.projectdesigner.engine.impl.CalculationEngineImpl;
 import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
 import com.portkullis.projectdesigner.model.Activity;
-import com.portkullis.projectdesigner.model.EdgeProperties;
 import com.portkullis.projectdesigner.model.Project;
 
 import java.util.*;
-import java.util.function.Function;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class AbstractVisualizationSpike implements Runnable {
 
-    private final VisualizationEngine<Activity> visualizationEngine;
-    private final CalculationEngine<Activity> calculationEngine;
-    private final AssignmentEngine<Activity, String> assignmentEngine;
+    private final VisualizationEngine visualizationEngine = new VisualizationEngineImpl();
+    private final CalculationEngine calculationEngine = new CalculationEngineImpl();
+    private final AssignmentEngine<Activity, String> assignmentEngine = new AssignmentEngineImpl<>();
 
     private final Project<Activity, String> project = new Project<>();
     private final Map<Integer, Activity> activityMap = new HashMap<>();
 
-    private AssignmentEngine.ProjectData<Activity, String> projectData = new ProjectDataAdapter<>(project);
-
-    AbstractVisualizationSpike() {
-        Function<Activity, Collection<Activity>> prerequisiteMapper = Activity::getPrerequisites;
-        Function<Activity, Collection<Activity>> directSuccessorMapper = activity -> project.getUtilityData().stream()
-                .filter(a -> prerequisiteMapper.apply(a).contains(activity))
-                .collect(toSet());
-
-        this.calculationEngine = new CalculationEngineImpl<>();
-
-        Function<Activity, EdgeProperties> edgePropertyMapper = activity -> new EdgeProperties(Long.toString(activity.getId()), activity.getDuration());
-        this.visualizationEngine = new VisualizationEngineImpl<>(Activity::getId, prerequisiteMapper, edgePropertyMapper);
-
-        this.assignmentEngine = new AssignmentEngineImpl<>();
-    }
+    private AssignmentEngine.ProjectData<Activity, String> projectData = new ProjectAssignmentDataAdapter<>(project);
 
     protected abstract void defineActivities();
 
@@ -73,7 +58,7 @@ public abstract class AbstractVisualizationSpike implements Runnable {
 
         Date timerStart = new Date();
         try {
-            visualizationEngine.visualizeProject(project);
+            visualizationEngine.visualizeProject(new ProjectVisualizationDataAdapter(project));
         } finally {
             Date timerStop = new Date();
             System.out.println("Graph calculated in " + (timerStop.getTime() - timerStart.getTime()) + "ms");

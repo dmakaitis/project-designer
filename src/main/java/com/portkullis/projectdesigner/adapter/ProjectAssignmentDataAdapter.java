@@ -9,11 +9,11 @@ import java.util.HashSet;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 
-public class ProjectDataAdapter<A, R> implements AssignmentEngine.ProjectData<A, R> {
+public class ProjectAssignmentDataAdapter<A, R> implements AssignmentEngine.ProjectData<A, R> {
 
     private final Project<A, R> project;
 
-    public ProjectDataAdapter(Project<A, R> project) {
+    public ProjectAssignmentDataAdapter(Project<A, R> project) {
         this.project = project;
     }
 

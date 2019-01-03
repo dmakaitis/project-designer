@@ -2,10 +2,10 @@ package com.portkullis.projectdesigner.engine.impl;
 
 import com.portkullis.projectdesigner.engine.CalculationEngine;
 
-public class CalculationEngineImpl<A> implements CalculationEngine<A> {
+public class CalculationEngineImpl implements CalculationEngine {
 
     @Override
-    public int getEarliestStartTime(ActivityData<A> activity) {
+    public int getEarliestStartTime(ActivityData activity) {
         return activity.getPrerequisites().stream()
                 .mapToInt(this::getEarliestEndTime)
                 .max()
@@ -13,17 +13,17 @@ public class CalculationEngineImpl<A> implements CalculationEngine<A> {
     }
 
     @Override
-    public int getEarliestEndTime(ActivityData<A> activity) {
+    public int getEarliestEndTime(ActivityData activity) {
         return getEarliestStartTime(activity) + activity.getDuration();
     }
 
     @Override
-    public int getLatestStartTime(ActivityData<A> activity) {
+    public int getLatestStartTime(ActivityData activity) {
         return getLatestEndTime(activity) - activity.getDuration();
     }
 
     @Override
-    public int getLatestEndTime(ActivityData<A> activity) {
+    public int getLatestEndTime(ActivityData activity) {
         return activity.getSuccessors().stream()
                 .mapToInt(this::getLatestStartTime)
                 .min()
@@ -31,7 +31,7 @@ public class CalculationEngineImpl<A> implements CalculationEngine<A> {
     }
 
     @Override
-    public int getTotalFloat(ActivityData<A> activity) {
+    public int getTotalFloat(ActivityData activity) {
         return getLatestStartTime(activity) - getEarliestStartTime(activity);
     }
 
