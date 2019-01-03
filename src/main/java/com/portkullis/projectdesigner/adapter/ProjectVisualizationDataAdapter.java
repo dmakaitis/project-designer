@@ -7,14 +7,27 @@ import com.portkullis.projectdesigner.model.Project;
 
 import java.util.*;
 
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * Data adapter to allow the visualization engine to deal with projects without having to know the project data
+ * structures.
+ *
+ * @author darius
+ */
 public class ProjectVisualizationDataAdapter implements VisualizationEngine.ProjectData {
 
     private final Project<Activity, ?> project;
 
     private final transient Map<Activity, VisualizationEngine.ActivityData> activityDataMap = new HashMap<>();
 
+    /**
+     * Constructs the adapter.
+     *
+     * @param project the project for which to provide data.
+     */
     public ProjectVisualizationDataAdapter(Project<Activity, ?> project) {
         this.project = project;
     }
@@ -65,20 +78,30 @@ public class ProjectVisualizationDataAdapter implements VisualizationEngine.Proj
         }
 
         @Override
+        public int getDuration() {
+            return activity.getDuration();
+        }
+
+        @Override
         public Collection<VisualizationEngine.ActivityData> getPrerequisites() {
             Set<VisualizationEngine.ActivityData> prerequisites = activity.getPrerequisites().stream()
                     .map(ActivityVisualizationDataAdapter::new)
                     .collect(toSet());
 
-            // TODO: Include resource dependencies
             Set<?> activityResources = project.getActivityAssignments().get(activity);
             if (activityResources != null) {
                 activityResources.forEach(resource -> {
-                    Set<Activity> possiblePrerequisites = project.getActivityAssignments().entrySet().stream()
+                    List<VisualizationEngine.ActivityData> possiblePrerequisites = project.getActivityAssignments().entrySet().stream()
+                            .filter(e -> !e.getKey().equals(this))
                             .filter(e -> e.getValue().contains(resource))
                             .map(Map.Entry::getKey)
-                            .collect(toSet());
-                    System.out.println("---- " + activity.getId() + " => " + possiblePrerequisites);
+                            .map(ProjectVisualizationDataAdapter.this::wrapActivity)
+                            .sorted(comparing(VisualizationEngine.ActivityData::getEarlyStart).thenComparing(VisualizationEngine.ActivityData::getLateStart))
+                            .collect(toList());
+
+                    possiblePrerequisites = possiblePrerequisites.subList(0, possiblePrerequisites.indexOf(this));
+
+                    prerequisites.addAll(possiblePrerequisites);
                 });
             }
 
@@ -88,8 +111,33 @@ public class ProjectVisualizationDataAdapter implements VisualizationEngine.Proj
         }
 
         @Override
+        public int getLateStart() {
+//            System.out.println("Getting late start for activity " + activity.getId());
+            return getSuccessors().stream()
+                    .mapToInt(s -> s.getLateStart() - getDuration())
+                    .min()
+                    .orElse(getEarlyStart());
+        }
+
+        @Override
+        public int getEarlyStart() {
+            return activity.getPrerequisites().stream()
+                    .map(ProjectVisualizationDataAdapter.this::wrapActivity)
+                    .mapToInt(p -> p.getEarlyStart() + p.getDuration())
+                    .max()
+                    .orElse(0);
+        }
+
+        @Override
         public EdgeProperties getEdgeProperties() {
             return new EdgeProperties(Long.toString(activity.getId()), activity.getDuration());
+        }
+
+        private Collection<VisualizationEngine.ActivityData> getSuccessors() {
+            return project.getUtilityData().stream()
+                    .filter(a -> a.getPrerequisites().stream().anyMatch(p -> wrapActivity(p).equals(this)))
+                    .map(ProjectVisualizationDataAdapter.this::wrapActivity)
+                    .collect(toSet());
         }
 
     }

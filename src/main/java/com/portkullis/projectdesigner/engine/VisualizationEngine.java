@@ -31,11 +31,32 @@ public interface VisualizationEngine {
     interface ActivityData {
 
         /**
-         * Returns the prerequisites for the activity.
+         * Returns the duration of the activity.
          *
-         * @return the prerequisites for the activity.
+         * @return the duration of the activity.
+         */
+        int getDuration();
+
+        /**
+         * Returns the direct prerequisites for the activity.
+         *
+         * @return the direct prerequisites for the activity.
          */
         Collection<ActivityData> getPrerequisites();
+
+        /**
+         * Returns the earliest start date for the activity.
+         *
+         * @return the earliest start date for the activity.
+         */
+        int getEarlyStart();
+
+        /**
+         * Returns the latest start date for the activity without affecting the total duration of the project.
+         *
+         * @return the latest start date for the activity.
+         */
+        int getLateStart();
 
         /**
          * Returns the edge properties to use for the activity in the visualization.
