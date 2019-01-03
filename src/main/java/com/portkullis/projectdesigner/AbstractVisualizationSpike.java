@@ -29,26 +29,12 @@ public abstract class AbstractVisualizationSpike implements Runnable {
     private AssignmentEngine.ProjectData<Activity, String> projectData = new ProjectDataAdapter<>(project);
 
     AbstractVisualizationSpike() {
-        Function<Activity, Collection<Activity>> prerequisiteMapper = activity -> {
-//            Set<Activity> prerequisites = project.getResourceAssignments().values().stream()
-//                    .filter(a -> a.contains(activity))
-//                    .flatMap(a -> a.headSet(activity).stream())
-//                    .collect(toSet());
-//            prerequisites.addAll(activity.getPrerequisites());
-//
-////            if(isEmpty(project.getActivityAssignments().get(activity))) {
-////                System.out.println("Activity " + activity.getId() + " is unassigned...");
-////            }
-//
-//            return prerequisites;
-            return activity.getPrerequisites();
-        };
+        Function<Activity, Collection<Activity>> prerequisiteMapper = Activity::getPrerequisites;
         Function<Activity, Collection<Activity>> directSuccessorMapper = activity -> project.getUtilityData().stream()
                 .filter(a -> prerequisiteMapper.apply(a).contains(activity))
                 .collect(toSet());
 
-        this.calculationEngine = new CalculationEngineImpl<>(prerequisiteMapper, directSuccessorMapper, Activity::getDuration);
-//        Comparator<Activity> activitySorter = Comparator.comparing(calculationEngine::getEarliestEndTime).thenComparing(calculationEngine::getTotalFloat);
+        this.calculationEngine = new CalculationEngineImpl<>();
 
         Function<Activity, EdgeProperties> edgePropertyMapper = activity -> new EdgeProperties(Long.toString(activity.getId()), activity.getDuration());
         this.visualizationEngine = new VisualizationEngineImpl<>(Activity::getId, prerequisiteMapper, edgePropertyMapper);

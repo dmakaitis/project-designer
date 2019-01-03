@@ -1,77 +1,33 @@
 package com.portkullis.projectdesigner.engine.impl
 
-
+import com.portkullis.projectdesigner.engine.CalculationEngine
 import spock.lang.Specification
 
 class CalculationEngineImplTest extends Specification {
 
-    def static activity1 = "Activity 1"
-    def static activity2 = "Activity 2"
-    def static activity3 = "Activity 3"
-    def static activity4 = "Activity 4"
+    def activity1 = Mock(CalculationEngine.ActivityData)
+    def activity2 = Mock(CalculationEngine.ActivityData)
+    def activity3 = Mock(CalculationEngine.ActivityData)
+    def activity4 = Mock(CalculationEngine.ActivityData)
 
-    def static prerequisites = [
-            (activity1): [],
-            (activity2): [activity1],
-            (activity3): [activity1],
-            (activity4): [activity2, activity3]
-    ]
-    def static directPrerequisiteCalculator = { prerequisites[it] }
-    def static directSuccessorCalculator = { a ->
-        def rVal = []
-        prerequisites.entrySet().forEach({ e ->
-            if (e.getValue().contains(a)) {
-                rVal.add(e.getKey())
-            }
-        })
-        return rVal
-    }
+    def engine = new CalculationEngineImpl()
 
-    def static durations = [
-            (activity1): 10,
-            (activity2): 15,
-            (activity3): 25,
-            (activity4): 20
-    ]
-    def static activityDurationCalculator = { durations[it] }
+    void setup() {
+        activity1.prerequisites >> []
+        activity1.successors >> [activity2, activity3]
+        activity1.duration >> 10
 
-    def engine = new CalculationEngineImpl(directPrerequisiteCalculator, directSuccessorCalculator, activityDurationCalculator)
+        activity2.prerequisites >> [activity1]
+        activity2.successors >> [activity4]
+        activity2.duration >> 15
 
-    def "Prerequisites for an activity with no prerequisites should be empty"() {
-        expect:
-        engine.getPrerequisites(activity1).empty
-    }
+        activity3.prerequisites >> [activity1]
+        activity3.successors >> [activity4]
+        activity3.duration >> 25
 
-    def "Prerequisites for an activity with one prerequisite should include that one prerequisite"() {
-        expect:
-        engine.getPrerequisites(activity2).asList() == [activity1]
-        engine.getPrerequisites(activity3).asList() == [activity1]
-    }
-
-    def "Prerequisites for an activity with indirect prerequisites should include all prerequisites"() {
-        expect:
-        engine.getPrerequisites(activity4).containsAll([activity1, activity2, activity3])
-    }
-
-    def "If the prerequisite calculator returns null, treat the result as having no prerequisites"() {
-        expect:
-        engine.getPrerequisites("Invalid activity").empty
-    }
-
-    def "Successors for an activity with no direct successors should be empty"() {
-        expect:
-        engine.getSuccessors(activity4).empty
-    }
-
-    def "Successors for an activity with one successor should include that one successor"() {
-        expect:
-        engine.getSuccessors(activity2).asList() == [activity4]
-        engine.getSuccessors(activity3).asList() == [activity4]
-    }
-
-    def "Successors for an activity with indirect successors should include all successors"() {
-        expect:
-        engine.getSuccessors(activity1).containsAll([activity4, activity2, activity3])
+        activity4.prerequisites >> [activity2, activity3]
+        activity4.successors >> []
+        activity4.duration >> 20
     }
 
     def "The earliest start time of an activity with no prerequisites is zero"() {
@@ -79,7 +35,7 @@ class CalculationEngineImplTest extends Specification {
         engine.getEarliestStartTime(activity1) == 0
     }
 
-    def "The earliest start time of an activity with only one prerequisite is the duration of the prerequisite"() {
+    def "The earliest start time of an activity with only one prerequisite is the end time of the prerequisite"() {
         expect:
         engine.getEarliestStartTime(activity2) == 10
         engine.getEarliestStartTime(activity3) == 10
