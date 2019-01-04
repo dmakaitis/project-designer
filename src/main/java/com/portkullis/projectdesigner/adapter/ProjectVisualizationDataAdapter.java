@@ -70,71 +70,11 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
                 .collect(asUnion())
         ));
 
-        System.out.println(resourceSpans);
-
         return resourceSpans.values().stream().findFirst().orElse(new SpanSet<>());
     }
 
     private VisualizationEngine.ActivityData wrapActivity(Activity activity) {
         return activityDataMap.computeIfAbsent(activity, ActivityVisualizationDataAdapter::new);
-    }
-
-    public Graph<VisualizationEngine.ActivityData> getActivityGraph() {
-        if (activityGraph == null) {
-            activityNodes.clear();
-            nodeActivities.clear();
-
-            activityGraph = new Graph<>();
-
-            // Create nodes for each activity
-            project.getUtilityData().forEach(a -> {
-                Node node = new Node(a.getId(), Long.toString(a.getId()));
-                activityNodes.put(a, node);
-                nodeActivities.put(node, a);
-                activityGraph.getNodes().add(node);
-            });
-
-            // Now add edges for the utility data prerequisites
-            project.getUtilityData().forEach(a -> {
-                a.getPrerequisites().forEach(p -> {
-                    addEdge(p, a);
-                });
-            });
-
-            // Add edges for the resource dependencies
-            project.getResources().forEach(r -> {
-                project.getActivityAssignments().entrySet().stream()
-                        .filter(e -> e.getValue().contains(r))
-                        .map(Map.Entry::getKey)
-                        .sorted(comparing(a -> getEarlyStartFromGraph(activityGraph, a)))
-                        .reduce(null, (p, a) -> {
-                            if (p != null) {
-                                addEdge(p, a);
-                            }
-                            return a;
-                        });
-            });
-
-            project.getResourceTypes().forEach((t, r) -> {
-                SpanSet<VisualizationEngine.ActivityData> occupiedSpans = getResourceTypeOccupiedSpans(t);
-                List<Activity> unassignedActivities = project.getUtilityData().stream()
-                        .filter(a -> t.equals(project.getActivityTypes().get(a)))
-                        .filter(a -> project.getActivityAssignments().get(a) == null)
-                        .collect(toList());
-
-                Activity prereq = null;
-                for (Activity activity : unassignedActivities) {
-                    int earlyStart = getEarlyStartFromGraph(activityGraph, activity);
-                    occupiedSpans.getSpans().stream()
-                            .filter(s -> s.getStart() <= earlyStart)
-                            .filter(s -> s.getEnd() >= earlyStart)
-                            .findFirst()
-                            .ifPresent(s -> addEdge(s.getEndActivity().getActivity(), activity));
-                }
-            });
-        }
-
-        return activityGraph;
     }
 
     private void addEdge(Activity a, Activity b) {
@@ -177,7 +117,7 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
 
         private final Activity activity;
 
-        private ActivityVisualizationDataAdapter(Activity activity) {
+        ActivityVisualizationDataAdapter(Activity activity) {
             this.activity = activity;
         }
 
@@ -193,7 +133,7 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ActivityVisualizationDataAdapter that = (ActivityVisualizationDataAdapter) o;
-            return Objects.equals(activity, that.activity);
+            return activity.equals(that.activity);
         }
 
         @Override
@@ -258,10 +198,57 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
                     .collect(toSet());
         }
 
-//        @Override
-//        public String getActivityResourceType() {
-//            return project.getActivityTypes().get(activity);
-//        }
+        private Graph<VisualizationEngine.ActivityData> getActivityGraph() {
+            if (activityGraph == null) {
+                activityNodes.clear();
+                nodeActivities.clear();
+
+                activityGraph = new Graph<>();
+
+                // Create nodes for each activity
+                project.getUtilityData().forEach(a -> {
+                    Node node = new Node(a.getId(), Long.toString(a.getId()));
+                    activityNodes.put(a, node);
+                    nodeActivities.put(node, a);
+                    activityGraph.getNodes().add(node);
+                });
+
+                // Now add edges for the utility data prerequisites
+                project.getUtilityData().forEach(a -> a.getPrerequisites().forEach(p -> addEdge(p, a)));
+
+                // Add edges for the resource dependencies
+                project.getResources().forEach(r -> project.getActivityAssignments().entrySet().stream()
+                        .filter(e -> e.getValue().contains(r))
+                        .map(Map.Entry::getKey)
+                        .sorted(comparing(a -> getEarlyStartFromGraph(activityGraph, a)))
+                        .reduce(null, (p, a) -> {
+                            if (p != null) {
+                                addEdge(p, a);
+                            }
+                            return a;
+                        })
+                );
+
+                project.getResourceTypes().forEach((t, r) -> {
+                    SpanSet<VisualizationEngine.ActivityData> occupiedSpans = getResourceTypeOccupiedSpans(t);
+                    List<Activity> unassignedActivities = project.getUtilityData().stream()
+                            .filter(a -> t.equals(project.getActivityTypes().get(a)))
+                            .filter(a -> project.getActivityAssignments().get(a) == null)
+                            .collect(toList());
+
+                    for (Activity unassignedActivity : unassignedActivities) {
+                        int earlyStart = getEarlyStartFromGraph(activityGraph, unassignedActivity);
+                        occupiedSpans.getSpans().stream()
+                                .filter(s -> s.getStart() <= earlyStart)
+                                .filter(s -> s.getEnd() >= earlyStart)
+                                .findFirst()
+                                .ifPresent(s -> addEdge(s.getEndActivity().getActivity(), unassignedActivity));
+                    }
+                });
+            }
+
+            return activityGraph;
+        }
 
     }
 

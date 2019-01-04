@@ -96,13 +96,6 @@ public interface VisualizationEngine {
          */
         EdgeProperties getEdgeProperties();
 
-//        /**
-//         * Returns the type of resource that must perform this activity.
-//         *
-//         * @return the type of resource that must perform this activity, or {@code null} if any resource can perform this activity.
-//         */
-//        String getActivityResourceType();
-
     }
 
 }

@@ -203,7 +203,7 @@ public class Graph<T> {
             throw new ProjectDesignerRuntimeException("Multiple start nodes found for graph.");
         }
 
-        return getAllDistinctPaths(startNodes.stream().findFirst().get(), end).stream()
+        return getAllDistinctPaths(startNodes.stream().findFirst().get(), end).stream() // NOSONAR - This is validated above
                 .flatMap(List::stream)
                 .filter(e -> e.getData().isPresent())
                 .collect(toSet());

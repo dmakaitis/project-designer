@@ -29,12 +29,12 @@ public class Activity {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Activity{");
-        sb.append("id=").append(id);
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", duration=").append(duration);
-        sb.append('}');
-        return sb.toString();
+        return "Activity{" +
+                "id=" + id +
+                ", description='" + description + '\'' +
+                ", duration=" + duration +
+                ", predecessors=" + predecessors +
+                '}';
     }
 
     @Override

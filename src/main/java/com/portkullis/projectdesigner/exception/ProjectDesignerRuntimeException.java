@@ -3,7 +3,7 @@ package com.portkullis.projectdesigner.exception;
 /**
  * Runtime exception thrown by the project designer application.
  *
- * @author req75632
+ * @author darius
  */
 public class ProjectDesignerRuntimeException extends RuntimeException {
 

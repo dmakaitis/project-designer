@@ -92,7 +92,7 @@ public class Edge<T> {
      *
      * @return the activity data.
      */
-    public Optional<T> getData() {
+    Optional<T> getData() {
         return Optional.ofNullable(data);
     }
 
