@@ -8,6 +8,7 @@ import com.portkullis.projectdesigner.model.*;
 
 import java.util.*;
 
+import static com.portkullis.projectdesigner.model.SpanSet.asUnion;
 import static java.util.Comparator.comparing;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.*;
@@ -66,8 +67,10 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
                 .map(this::wrapActivity)
                 .sorted(comparing(VisualizationEngine.ActivityData::getEarlyStart).thenComparing(VisualizationEngine.ActivityData::getLateStart))
                 .map(a -> new Span<>(a.getEarlyStart(), a.getEarlyStart() + a.getDuration(), a))
-                .reduce(new SpanSet<>(), SpanSet::getUnion, SpanSet::getUnion)
+                .collect(asUnion())
         ));
+
+        System.out.println(resourceSpans);
 
         return resourceSpans.values().stream().findFirst().orElse(new SpanSet<>());
     }
