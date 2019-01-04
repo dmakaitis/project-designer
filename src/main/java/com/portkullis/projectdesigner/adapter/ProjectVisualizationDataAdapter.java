@@ -8,6 +8,7 @@ import com.portkullis.projectdesigner.model.*;
 
 import java.util.*;
 
+import static com.portkullis.projectdesigner.model.SpanSet.asIntersection;
 import static com.portkullis.projectdesigner.model.SpanSet.asUnion;
 import static java.util.Comparator.comparing;
 import static java.util.function.Function.identity;
@@ -70,7 +71,8 @@ public class ProjectVisualizationDataAdapter<R> implements VisualizationEngine.P
                 .collect(asUnion())
         ));
 
-        return resourceSpans.values().stream().findFirst().orElse(new SpanSet<>());
+        return resourceSpans.values().stream()
+                .collect(asIntersection());
     }
 
     private VisualizationEngine.ActivityData wrapActivity(Activity activity) {

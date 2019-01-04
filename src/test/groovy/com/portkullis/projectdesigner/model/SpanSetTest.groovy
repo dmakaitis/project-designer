@@ -141,4 +141,109 @@ class SpanSetTest extends Specification {
         result == expected
     }
 
+    def "The intersection of two span sets with no overlapping spans is an empty span set"() {
+        given:
+        def span1 = new Span<>(10, 20, "Span 1")
+        def spanSetA = [span1]
+
+        def span2 = new Span<>(30, 50, "Span 2")
+        def spanSetB = [span2]
+
+        expect:
+        intersectSpanLists(spanSetA, spanSetB) == []
+    }
+
+    def "The intersection of two spans where the first span is completely within the second is the first span"() {
+        given:
+        def span1 = new Span<>(10, 20, "Span 1")
+        def spanSetA = [span1]
+
+        def span2 = new Span<>(0, 30, "Span 2")
+        def spanSetB = [span2]
+
+        expect:
+        intersectSpanLists(spanSetA, spanSetB) == [span1]
+    }
+
+    def "The intersection of two spans where the second span is completely within the first is the second span"() {
+        given:
+        def span1 = new Span<>(0, 30, "Span 1")
+        def spanSetA = [span1]
+
+        def span2 = new Span<>(10, 20, "Span 2")
+        def spanSetB = [span2]
+
+        expect:
+        intersectSpanLists(spanSetA, spanSetB) == [span2]
+    }
+
+    def "The intersection of two spans where the first span preceeds and partially overlaps the second span is the overlapping portion of the two spans"() {
+        given:
+        def span1 = new Span<>(0, 30, "Span 1")
+        def spanSetA = [span1]
+
+        def span2 = new Span<>(10, 50, "Span 2")
+        def spanSetB = [span2]
+
+        expect:
+        intersectSpanLists(spanSetA, spanSetB) == [new Span<>(10, 30, "Span 1")]
+    }
+
+    def "The intersection of two spans where the first span follows and partially overlaps the second span is the overlapping portion of the two spans"() {
+        given:
+        def span1 = new Span<>(10, 50, "Span 1")
+        def spanSetA = [span1]
+
+        def span2 = new Span<>(0, 30, "Span 2")
+        def spanSetB = [span2]
+
+        expect:
+        intersectSpanLists(spanSetA, spanSetB) == [new Span<>(10, 30, "Span 2")]
+    }
+
+    def "The intersection of two span set lists with multiple overlapping spans is the overlapping portions of the combined span sets"() {
+        given:
+        def span1 = new Span<>(10, 20, "Span 1")
+        def span2 = new Span<>(30, 50, "Span 2")
+        def span3 = new Span<>(70, 100, "Span 3")
+        def spanSetA = [span1, span2, span3]
+
+        def span4 = new Span<>(0, 15, "Span 4")
+        def span5 = new Span<>(45, 55, "Span 5")
+        def span6 = new Span<>(80, 90, "Span 6")
+        def spanSetB = [span4, span5, span6]
+
+        expect:
+        intersectSpanLists(spanSetA, spanSetB) == [
+                new Span<>(10, 15, "Span 4"),
+                new Span<>(45, 50, "Span 2"),
+                new Span<>(80, 90, "Span 6")
+        ]
+    }
+
+    def "The intersection of two span sets with multiple overlapping spans is the overlapping portions of the combined span sets"() {
+        given:
+        def span1 = new Span<>(10, 20, "Span 1")
+        def span2 = new Span<>(30, 50, "Span 2")
+        def span3 = new Span<>(70, 100, "Span 3")
+        def spanSetA = [span1, span2, span3].stream().collect(asUnion())
+
+        def span4 = new Span<>(0, 15, "Span 4")
+        def span5 = new Span<>(45, 55, "Span 5")
+        def span6 = new Span<>(80, 90, "Span 6")
+        def spanSetB = [span4, span5, span6].stream().collect(asUnion())
+
+        def expected = [
+                new Span<>(10, 15, "Span 4"),
+                new Span<>(45, 50, "Span 2"),
+                new Span<>(80, 90, "Span 6")
+        ].stream().collect(asUnion())
+
+        when:
+        def result = [spanSetA, spanSetB].stream().collect(asIntersection())
+
+        then:
+        result == expected
+    }
+
 }

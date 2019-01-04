@@ -33,7 +33,6 @@ public class Activity {
                 "id=" + id +
                 ", description='" + description + '\'' +
                 ", duration=" + duration +
-                ", predecessors=" + predecessors +
                 '}';
     }
 

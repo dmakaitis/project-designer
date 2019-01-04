@@ -48,15 +48,15 @@ public class UtilitySpike extends AbstractVisualizationSpike {
         resources.add("Architect");
 
         resources.add("Developer 1");
-//        resources.add("Developer 2");
-//        resources.add("Developer 3");
-//        resources.add("Developer 4");
-//        resources.add("Developer 5");
-//        resources.add("Developer 6");
-//        resources.add("Developer 7");
-//        resources.add("Developer 8");
-//        resources.add("Developer 9");
-//        resources.add("Developer 10");
+        resources.add("Developer 2");
+        resources.add("Developer 3");
+        resources.add("Developer 4");
+        resources.add("Developer 5");
+        resources.add("Developer 6");
+        resources.add("Developer 7");
+        resources.add("Developer 8");
+        resources.add("Developer 9");
+        resources.add("Developer 10");
 
         resources.add("DBA 1");
         resources.add("DBA 2");
@@ -74,16 +74,16 @@ public class UtilitySpike extends AbstractVisualizationSpike {
         )));
 
         resourceTypes.put(DEVELOPER, new TreeSet<>(asList(
-                "Developer 1"
-//                "Developer 2",
-//                "Developer 3",
-//                "Developer 4",
-//                "Developer 5",
-//                "Developer 6",
-//                "Developer 7",
-//                "Developer 8",
-//                "Developer 9",
-//                "Developer 10"
+                "Developer 1",
+                "Developer 2",
+                "Developer 3",
+                "Developer 4",
+                "Developer 5",
+                "Developer 6",
+                "Developer 7",
+                "Developer 8",
+                "Developer 9",
+                "Developer 10"
         )));
     }
 
@@ -109,8 +109,8 @@ public class UtilitySpike extends AbstractVisualizationSpike {
 
 
         assignResource(6, "Developer 1");
-        assignResource(7, "Developer 1");
-        assignResource(8, "Developer 1");
+        assignResource(7, "Developer 2");
+//        assignResource(8, "Developer 1");
 //        assignResource(13, "Developer 1");
 //        assignResource(12, "Developer 1");
 //        assignResource(16, "Developer 1");
@@ -118,9 +118,9 @@ public class UtilitySpike extends AbstractVisualizationSpike {
 //        assignResource(15, "Developer 1");
 //        assignResource(14, "Developer 1");
 //        assignResource(17, "Developer 1");
-        assignResource(18, "Developer 1");
-        assignResource(20, "Developer 1");
-        assignResource(19, "Developer 1");
+//        assignResource(18, "Developer 1");
+//        assignResource(20, "Developer 1");
+//        assignResource(19, "Developer 1");
     }
 
 }
