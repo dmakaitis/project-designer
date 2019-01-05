@@ -25,7 +25,7 @@ public abstract class AbstractVisualizationSpike implements Runnable {
     private final Project<Activity, String> project = new Project<>();
     private final Map<Integer, Activity> activityMap = new HashMap<>();
 
-    private AssignmentEngine.ProjectData<Activity, String> projectData = new ProjectAssignmentDataAdapter<>(project);
+    private AssignmentEngine.ProjectData<Activity, String> projectData = new ProjectAssignmentDataAdapter(project);
 
     protected abstract void defineActivities();
 
@@ -42,7 +42,7 @@ public abstract class AbstractVisualizationSpike implements Runnable {
         System.out.println("Assigning resources...");
         assignResources();
 
-//        assignmentEngine.assignResources(project);
+        assignmentEngine.assignResources(projectData);
 
         project.getUtilityData().forEach(activity -> {
             System.out.println("Activity " + activity.getId() + " - " + activity.getDescription() + ": " + project.getActivityAssignments().get(activity));
@@ -58,7 +58,7 @@ public abstract class AbstractVisualizationSpike implements Runnable {
 
         Date timerStart = new Date();
         try {
-            visualizationEngine.visualizeProject(new ProjectVisualizationDataAdapter<>(project));
+            visualizationEngine.visualizeProject(new ProjectVisualizationDataAdapter(project));
 //            visualizationEngine.visualizeGraph(new ProjectVisualizationDataAdapter<>(project).getActivityGraph());
         } finally {
             Date timerStop = new Date();

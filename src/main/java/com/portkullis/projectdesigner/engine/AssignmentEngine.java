@@ -1,8 +1,9 @@
 package com.portkullis.projectdesigner.engine;
 
-import com.portkullis.projectdesigner.model.Project;
+import com.portkullis.projectdesigner.model.SpanSet;
 
 import java.util.Collection;
+import java.util.SortedSet;
 
 /**
  * Methods for assigning resources to activities in a project.
@@ -19,7 +20,7 @@ public interface AssignmentEngine<A, R> {
      *
      * @param project the project for which to assign resources.
      */
-    void assignResources(Project<A, R> project);
+    void assignResources(ProjectData<A, R> project);
 
     /**
      * Assigns a single resource to a single activity. Multiple calls to this method may be used to assign multiple
@@ -54,12 +55,68 @@ public interface AssignmentEngine<A, R> {
         Collection<A> getActivities();
 
         /**
+         * Returns the unassigned activities in the project.
+         *
+         * @return the unassigned activities in the project.
+         */
+        Collection<A> getUnassignedActivities();
+
+        /**
+         * Returns the earliest start of the activity.
+         *
+         * @param activity the activity for which to get the earliest start.
+         * @return the earliest start of the activity.
+         */
+        int getEarliestStart(A activity);
+
+        /**
+         * Returns the earliest finish of the activity.
+         *
+         * @param activity the activity for which to get the earliest finish.
+         * @return the earliest finish of the activity.
+         */
+        int getEarliestFinish(A activity);
+
+        /**
+         * Returns the total float of the activity.
+         *
+         * @param activity the activity for which to get the total float.
+         * @return the total float of the activity.
+         */
+        int getTotalFloat(A activity);
+
+        /**
          * Assigns an activity to a resource. An activity may be assigned to more than one resource.
          *
          * @param activity the activity to assign.
          * @param resource the resource to which to assign the activity.
          */
         void assignActivityToResource(A activity, R resource);
+
+        /**
+         * Returns the resource type that must perform the activity.
+         *
+         * @param activity the activity.
+         * @return the resource type.
+         */
+        String getResourceType(A activity);
+
+        /**
+         * Returns the list of resources of the given type. The list should be sorted in order of preference with the
+         * most preferred resource being at the beginning of the list.
+         *
+         * @param resourceType the resource type.
+         * @return the list of resources in order of preference.
+         */
+        SortedSet<R> getResourcesOfType(String resourceType);
+
+        /**
+         * Returns the spans during which the resource has been assigned to activities.
+         *
+         * @param resource the resource for which to calculate occupied spans.
+         * @return the spans during which the resource is assigned to activities.
+         */
+        SpanSet<A> getResourceOccupiedSpans(R resource);
 
     }
 

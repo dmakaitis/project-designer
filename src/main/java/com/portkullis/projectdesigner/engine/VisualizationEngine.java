@@ -3,7 +3,6 @@ package com.portkullis.projectdesigner.engine;
 import com.portkullis.projectdesigner.engine.impl.Graph;
 import com.portkullis.projectdesigner.model.Activity;
 import com.portkullis.projectdesigner.model.EdgeProperties;
-import com.portkullis.projectdesigner.model.SpanSet;
 
 import java.util.Collection;
 
@@ -37,15 +36,6 @@ public interface VisualizationEngine {
          * @return all the activities in the project.
          */
         Collection<ActivityData> getActivities();
-
-        /**
-         * Returns the spans of time during which all the resources of the given resource type are fully occupied during
-         * the project.
-         *
-         * @param resourceType the resource type.
-         * @return the spans of time during which all resources of the given type are fully occupied.
-         */
-        SpanSet<ActivityData> getResourceTypeOccupiedSpans(String resourceType);
 
     }
 

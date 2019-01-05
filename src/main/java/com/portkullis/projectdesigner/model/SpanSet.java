@@ -8,6 +8,7 @@ import java.util.stream.Collector;
 
 import static java.lang.Integer.max;
 import static java.lang.Math.min;
+import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Comparator.comparing;
 
@@ -160,6 +161,25 @@ public class SpanSet<A> {
 
     private static <A> Span<A> getNextSpan(Iterator<Span<A>> iterator) {
         return iterator.hasNext() ? iterator.next() : null;
+    }
+
+    /**
+     * Returns the intersection of this span set with the given span.
+     *
+     * @param span the span with which to calculate the intersection.
+     * @return the intersection of this span set with the given span.
+     */
+    public SpanSet<A> intersect(Span<A> span) {
+        return new SpanSet<>(intersectSpanLists(spans, asList(span)));
+    }
+
+    /**
+     * Returns {@code true} if there are no spans in this span set.
+     *
+     * @return {@code true} if there are no spans in this span set; {@code false} otherwise.
+     */
+    public boolean isEmpty() {
+        return spans.isEmpty();
     }
 
 }

@@ -56,7 +56,6 @@ public class UtilitySpike extends AbstractVisualizationSpike {
         resources.add("Developer 7");
         resources.add("Developer 8");
         resources.add("Developer 9");
-        resources.add("Developer 10");
 
         resources.add("DBA 1");
         resources.add("DBA 2");
@@ -75,15 +74,14 @@ public class UtilitySpike extends AbstractVisualizationSpike {
 
         resourceTypes.put(DEVELOPER, new TreeSet<>(asList(
                 "Developer 1",
-                "Developer 2",
-                "Developer 3",
-                "Developer 4",
-                "Developer 5",
-                "Developer 6",
-                "Developer 7",
-                "Developer 8",
-                "Developer 9",
-                "Developer 10"
+                "Developer 2"
+//                "Developer 3",
+//                "Developer 4",
+//                "Developer 5",
+//                "Developer 6",
+//                "Developer 7",
+//                "Developer 8",
+//                "Developer 9"
         )));
     }
 
@@ -108,19 +106,19 @@ public class UtilitySpike extends AbstractVisualizationSpike {
         assignResource(21, "QA 2");
 
 
-        assignResource(6, "Developer 1");
-        assignResource(7, "Developer 2");
-//        assignResource(8, "Developer 1");
+//        assignResource(6, "Developer 1");
+//        assignResource(7, "Developer 2");
+//        assignResource(8, "Developer 3");
 //        assignResource(13, "Developer 1");
-//        assignResource(12, "Developer 1");
-//        assignResource(16, "Developer 1");
-//        assignResource(11, "Developer 1");
+//        assignResource(12, "Developer 3");
+//        assignResource(16, "Developer 4");
+//        assignResource(11, "Developer 2");
 //        assignResource(15, "Developer 1");
-//        assignResource(14, "Developer 1");
+//        assignResource(14, "Developer 2");
 //        assignResource(17, "Developer 1");
-//        assignResource(18, "Developer 1");
+//        assignResource(18, "Developer 2");
 //        assignResource(20, "Developer 1");
-//        assignResource(19, "Developer 1");
+//        assignResource(19, "Developer 2");
     }
 
 }

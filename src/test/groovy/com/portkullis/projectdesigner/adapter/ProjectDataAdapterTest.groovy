@@ -1,20 +1,18 @@
 package com.portkullis.projectdesigner.adapter
 
+import com.portkullis.projectdesigner.model.Activity
 import com.portkullis.projectdesigner.model.Project
 import spock.lang.Specification
 
 class ProjectDataAdapterTest extends Specification {
 
 
-    def static activity1 = "Activity 1"
-    def static activity2 = "Activity 2"
-    def static activity3 = "Activity 3"
+    def static activity1 = new Activity(1, "Activity 1", 10)
 
     def static dev1 = "Developer 1"
     def static dev2 = "Developer 2"
-    def static dev3 = "Developer 3"
 
-    def project = new Project<String, String>()
+    def project = new Project<Activity, String>()
     def adapter = new ProjectAssignmentDataAdapter(project)
 
     def "Retrieving the resources for a project should return a collection of those resources"() {
