@@ -68,6 +68,7 @@ public class ProjectAssignmentDataAdapter extends AbstractProjectDataAdapter imp
             project.getActivityAssignments().put(activity, new HashSet<>());
         }
         project.getActivityAssignments().get(activity).add(resource);
+        clearCaches();
     }
 
     @Override

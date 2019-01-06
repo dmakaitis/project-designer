@@ -3,7 +3,6 @@ package com.portkullis.projectdesigner.engine.impl;
 import com.portkullis.projectdesigner.engine.AssignmentEngine;
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
 import com.portkullis.projectdesigner.model.Span;
-import com.portkullis.projectdesigner.model.SpanSet;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -26,24 +25,16 @@ public class AssignmentEngineImpl<A, R> implements AssignmentEngine<A, R> {
                     .sorted(comparingInt(project::getEarliestStart).thenComparingInt(project::getTotalFloat))
                     .findFirst()
                     .ifPresent(activity -> {
-                        System.out.println("Next unassigned activity: " + activity);
-
                         SortedSet<R> candidateResources = project.getResourcesOfType(project.getResourceType(activity));
-                        System.out.println("Candidate resources: " + candidateResources);
-
                         Span<A> activitySpan = new Span<>(project.getEarliestStart(activity), project.getEarliestFinish(activity), activity);
-                        System.out.println("Activity span: " + activitySpan);
-
                         Optional<R> firstAvailableResource = candidateResources.stream()
-                                .filter(r -> {
-                                    SpanSet<A> occupiedSpans = project.getResourceOccupiedSpans(r);
-                                    System.out.println(r + " occupied spans: " + occupiedSpans);
-                                    return occupiedSpans.intersect(activitySpan).isEmpty();
-                                })
+                                .filter(r -> project.getResourceOccupiedSpans(r).intersect(activitySpan).isEmpty())
                                 .findFirst();
-                        System.out.println("First available resource: " + firstAvailableResource);
 
-                        firstAvailableResource.ifPresent(r -> project.assignActivityToResource(activity, r));
+                        firstAvailableResource.ifPresent(r -> {
+                            System.out.println("Assigning " + r + " to " + activity);
+                            project.assignActivityToResource(activity, r);
+                        });
                     });
 
             unassignedActivities = project.getUnassignedActivities();

@@ -90,24 +90,24 @@ public class AmuiSpike extends AbstractVisualizationSpike {
 
         resources.add("Developer 1");
         resources.add("Developer 2");
-        resources.add("Developer 3");
-        resources.add("Developer 4");
-        resources.add("Developer 5");
-        resources.add("Developer 6");
-        resources.add("Developer 7");
-        resources.add("Developer 8");
-        resources.add("Developer 9");
+//        resources.add("Developer 3");
+//        resources.add("Developer 4");
+//        resources.add("Developer 5");
+//        resources.add("Developer 6");
+//        resources.add("Developer 7");
+//        resources.add("Developer 8");
+//        resources.add("Developer 9");
 
         resourceTypes.put(DEVELOPER, new TreeSet<>(asList(
                 "Developer 1",
-                "Developer 2",
-                "Developer 3",
-                "Developer 4",
-                "Developer 5",
-                "Developer 6",
-                "Developer 7",
-                "Developer 8",
-                "Developer 9"
+                "Developer 2"
+//                "Developer 3",
+//                "Developer 4",
+//                "Developer 5",
+//                "Developer 6",
+//                "Developer 7",
+//                "Developer 8",
+//                "Developer 9"
         )));
 
         resources.add("Test Engineer 1");

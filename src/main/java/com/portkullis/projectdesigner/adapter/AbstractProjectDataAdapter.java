@@ -35,6 +35,10 @@ abstract class AbstractProjectDataAdapter {
         this.project = project;
     }
 
+    protected void clearCaches() {
+        activityGraph = null;
+    }
+
     private Graph<?> getActivityGraph() {
         if (activityGraph == null) {
             activityNodes.clear();
