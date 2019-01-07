@@ -9,8 +9,8 @@ import static java.util.Arrays.asList;
 
 public class UtilitySpike extends AbstractVisualizationSpike {
 
-    public static final String DEVELOPER = "Developer";
-    public static final String DBA = "DBA";
+    private static final String DEVELOPER = "Developer";
+    private static final String DBA = "DBA";
 
     public static void main(String[] args) {
         new UtilitySpike().run();
@@ -74,8 +74,8 @@ public class UtilitySpike extends AbstractVisualizationSpike {
 
         resourceTypes.put(DEVELOPER, new TreeSet<>(asList(
                 "Developer 1",
-                "Developer 2"
-//                "Developer 3",
+                "Developer 2",
+                "Developer 3"
 //                "Developer 4",
 //                "Developer 5",
 //                "Developer 6",

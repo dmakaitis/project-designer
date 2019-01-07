@@ -1,6 +1,9 @@
 package com.portkullis.projectdesigner.model;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A software development project.
@@ -10,12 +13,10 @@ import java.util.*;
 public class Project<A, R> {
 
     private List<A> utilityData;
-
     private Map<A, String> activityTypes;
-    private Map<String, SortedSet<R>> resourceTypes;
-    private Set<R> resources;
 
-    private Map<A, Set<R>> activityAssignments;
+    private Map<String, Plan<A, R>> plans;
+    private String activePlan;
 
     /**
      * Returns the utility data for the project.
@@ -27,30 +28,6 @@ public class Project<A, R> {
             utilityData = new ArrayList<>();
         }
         return utilityData;
-    }
-
-    /**
-     * Returns the collection of resources that may be used on the project.
-     *
-     * @return the collection of resources.
-     */
-    public Set<R> getResources() {
-        if (resources == null) {
-            resources = new HashSet<>();
-        }
-        return resources;
-    }
-
-    /**
-     * Returns the mapping of resource types to resources. Resources may belong to more than one type.
-     *
-     * @return the resource type map.
-     */
-    public Map<String, SortedSet<R>> getResourceTypes() {
-        if (resourceTypes == null) {
-            resourceTypes = new HashMap<>();
-        }
-        return resourceTypes;
     }
 
     /**
@@ -66,15 +43,33 @@ public class Project<A, R> {
     }
 
     /**
-     * Returns a map of activities to resources assigned to each activity.
+     * Returns the collection of plans for the project.
      *
-     * @return an activity assignment map.
+     * @return the collection of plans for the project.
      */
-    public Map<A, Set<R>> getActivityAssignments() {
-        if (activityAssignments == null) {
-            activityAssignments = new HashMap<>();
+    public Map<String, Plan<A, R>> getPlans() {
+        if (plans == null) {
+            plans = new HashMap<>();
         }
-        return activityAssignments;
+        return plans;
+    }
+
+    /**
+     * Returns the active plan for the project.
+     *
+     * @return the active plan for the project.
+     */
+    public String getActivePlan() {
+        return activePlan;
+    }
+
+    /**
+     * Sets the active plan for the project.
+     *
+     * @param activePlan the active plan for the project.
+     */
+    public void setActivePlan(String activePlan) {
+        this.activePlan = activePlan;
     }
 
 }

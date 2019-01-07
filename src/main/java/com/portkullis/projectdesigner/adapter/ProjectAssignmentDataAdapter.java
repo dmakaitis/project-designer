@@ -31,7 +31,7 @@ public class ProjectAssignmentDataAdapter extends AbstractProjectDataAdapter imp
 
     @Override
     public Collection<String> getResources() {
-        return unmodifiableSet(project.getResources());
+        return unmodifiableSet(getActivePlan().getResources());
     }
 
     @Override
@@ -42,7 +42,7 @@ public class ProjectAssignmentDataAdapter extends AbstractProjectDataAdapter imp
     @Override
     public Collection<Activity> getUnassignedActivities() {
         return unmodifiableList(project.getUtilityData().stream()
-                .filter(a -> project.getActivityAssignments().getOrDefault(a, emptySet()).isEmpty())
+                .filter(a -> getActivePlan().getActivityAssignments().getOrDefault(a, emptySet()).isEmpty())
                 .collect(toList())
         );
     }
@@ -64,10 +64,10 @@ public class ProjectAssignmentDataAdapter extends AbstractProjectDataAdapter imp
 
     @Override
     public void assignActivityToResource(Activity activity, String resource) {
-        if (!project.getActivityAssignments().containsKey(activity)) {
-            project.getActivityAssignments().put(activity, new HashSet<>());
+        if (!getActivePlan().getActivityAssignments().containsKey(activity)) {
+            getActivePlan().getActivityAssignments().put(activity, new HashSet<>());
         }
-        project.getActivityAssignments().get(activity).add(resource);
+        getActivePlan().getActivityAssignments().get(activity).add(resource);
         clearCaches();
     }
 
@@ -78,12 +78,12 @@ public class ProjectAssignmentDataAdapter extends AbstractProjectDataAdapter imp
 
     @Override
     public SortedSet<String> getResourcesOfType(String resourceType) {
-        return project.getResourceTypes().get(resourceType);
+        return getActivePlan().getResourceTypes().get(resourceType);
     }
 
     @Override
     public SpanSet<Activity> getResourceOccupiedSpans(String resource) {
-        return project.getActivityAssignments().entrySet().stream()
+        return getActivePlan().getActivityAssignments().entrySet().stream()
                 .filter(e -> e.getValue().contains(resource))
                 .map(Map.Entry::getKey)
                 .map(a -> new Span<>(getEarliestStart(a), getEarliestFinish(a), a))

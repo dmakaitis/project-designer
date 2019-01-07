@@ -3,10 +3,7 @@ package com.portkullis.projectdesigner.adapter;
 import com.portkullis.projectdesigner.engine.impl.Edge;
 import com.portkullis.projectdesigner.engine.impl.Graph;
 import com.portkullis.projectdesigner.engine.impl.Node;
-import com.portkullis.projectdesigner.model.Activity;
-import com.portkullis.projectdesigner.model.Project;
-import com.portkullis.projectdesigner.model.Span;
-import com.portkullis.projectdesigner.model.SpanSet;
+import com.portkullis.projectdesigner.model.*;
 
 import java.util.*;
 
@@ -43,6 +40,10 @@ abstract class AbstractProjectDataAdapter {
         activityLateStarts.clear();
     }
 
+    Plan<Activity, String> getActivePlan() {
+        return project.getPlans().computeIfAbsent(project.getActivePlan(), p -> new Plan<>());
+    }
+
     private Graph<?> getActivityGraph() {
         if (activityGraph == null) {
             activityNodes.clear();
@@ -62,7 +63,7 @@ abstract class AbstractProjectDataAdapter {
             project.getUtilityData().forEach(a -> a.getPrerequisites().forEach(p -> addEdge(p, a)));
 
             // Add edges for the resource dependencies
-            project.getResources().forEach(r -> project.getActivityAssignments().entrySet().stream()
+            getActivePlan().getResources().forEach(r -> getActivePlan().getActivityAssignments().entrySet().stream()
                     .filter(e -> e.getValue().contains(r))
                     .map(Map.Entry::getKey)
                     .sorted(comparing(this::getEarlyStartFromGraph))
@@ -74,11 +75,11 @@ abstract class AbstractProjectDataAdapter {
                     })
             );
 
-            project.getResourceTypes().forEach((t, r) -> {
+            getActivePlan().getResourceTypes().forEach((t, r) -> {
                 SpanSet<Activity> occupiedSpans = getResourceTypeOccupiedSpans(t);
                 List<Activity> unassignedActivities = project.getUtilityData().stream()
                         .filter(a -> t.equals(project.getActivityTypes().get(a)))
-                        .filter(a -> project.getActivityAssignments().get(a) == null)
+                        .filter(a -> getActivePlan().getActivityAssignments().get(a) == null)
                         .collect(toList());
 
                 for (Activity unassignedActivity : unassignedActivities) {
@@ -174,8 +175,8 @@ abstract class AbstractProjectDataAdapter {
     }
 
     private SpanSet<Activity> getResourceTypeOccupiedSpans(String resourceType) {
-        SortedSet<String> resources = project.getResourceTypes().get(resourceType);
-        Map<String, SpanSet<Activity>> resourceSpans = resources.stream().collect(toMap(identity(), r -> project.getActivityAssignments().entrySet().stream()
+        SortedSet<String> resources = getActivePlan().getResourceTypes().get(resourceType);
+        Map<String, SpanSet<Activity>> resourceSpans = resources.stream().collect(toMap(identity(), r -> getActivePlan().getActivityAssignments().entrySet().stream()
                 .filter(e -> e.getValue().contains(r))  // NOSONAR - This really is the correct type, trust me... ;-)
                 .map(Map.Entry::getKey)
                 .sorted(comparingInt(this::getEarlyStartFromGraph).thenComparingInt(this::getLateStartFromGraph))
