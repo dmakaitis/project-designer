@@ -3,15 +3,23 @@ package com.portkullis.projectdesigner;
 import com.portkullis.projectdesigner.adapter.ProjectAssignmentDataAdapter;
 import com.portkullis.projectdesigner.adapter.ProjectVisualizationDataAdapter;
 import com.portkullis.projectdesigner.engine.AssignmentEngine;
+import com.portkullis.projectdesigner.engine.CalculationEngine;
 import com.portkullis.projectdesigner.engine.VisualizationEngine;
 import com.portkullis.projectdesigner.engine.impl.AssignmentEngineImpl;
+import com.portkullis.projectdesigner.engine.impl.CalculationEngineImpl;
 import com.portkullis.projectdesigner.engine.impl.VisualizationEngineImpl;
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
 import com.portkullis.projectdesigner.model.Activity;
 import com.portkullis.projectdesigner.model.Plan;
 import com.portkullis.projectdesigner.model.Project;
 
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
@@ -19,6 +27,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class AbstractVisualizationSpike implements Runnable {
 
     private final VisualizationEngine visualizationEngine = new VisualizationEngineImpl();
+    private final CalculationEngine calculationEngine = new CalculationEngineImpl();
     private final AssignmentEngine<Activity, String> assignmentEngine = new AssignmentEngineImpl<>();
 
     private final Project<Activity, String> project = new Project<>();
@@ -50,7 +59,13 @@ public abstract class AbstractVisualizationSpike implements Runnable {
         project.getUtilityData().forEach(activity -> System.out.println("Activity "
                 + activity.getId() + " - "
                 + activity.getDescription() + ": "
-                + plan.getActivityAssignments().get(activity))
+                + plan.getActivityAssignments().get(activity) + " - "
+                + projectData.getEarliestFinish(activity))
+        );
+
+        System.out.println("Total duration: " + project.getUtilityData().stream()
+                .mapToInt(projectData::getEarliestFinish)
+                .max().orElse(0)
         );
 
         Date timerStart = new Date();
@@ -68,6 +83,10 @@ public abstract class AbstractVisualizationSpike implements Runnable {
     }
 
     void addActivity(int activityId, String description, int duration, String type, Integer... prerequisites) {
+        if (activityMap.containsKey(activityId)) {
+            throw new ProjectDesignerRuntimeException("Can not add activity with duplicate activity ID: " + activityId);
+        }
+
         List<Integer> prerequisitesList = asList(prerequisites);
         Set<Activity> prereqs = activityMap.entrySet().stream()
                 .filter(e -> prerequisitesList.contains(e.getKey()))
@@ -90,6 +109,14 @@ public abstract class AbstractVisualizationSpike implements Runnable {
 
     void assignResource(int activityId, String resource) {
         projectData.assignActivityToResource(activityMap.get(activityId), resource);
+    }
+
+    SortedSet<String> makeResources(String type, int count) {
+        SortedSet<String> resources = new TreeSet<>();
+        for (int i = 0; i < count; i++) {
+            resources.add(type + " " + (i + 1));
+        }
+        return resources;
     }
 
 }

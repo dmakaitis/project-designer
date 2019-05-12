@@ -3,6 +3,7 @@ package com.portkullis.projectdesigner.engine.impl;
 import com.portkullis.projectdesigner.engine.AssignmentEngine;
 import com.portkullis.projectdesigner.exception.ProjectDesignerRuntimeException;
 import com.portkullis.projectdesigner.model.Span;
+import com.portkullis.projectdesigner.model.SpanSet;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -22,14 +23,28 @@ public class AssignmentEngineImpl<A, R> implements AssignmentEngine<A, R> {
 
             unassignedActivities.stream()
                     .filter(a -> project.getResourceType(a) != null)
-                    .sorted(comparingInt(project::getEarliestStart).thenComparingInt(project::getTotalFloat))
-                    .findFirst()
+                    .min(comparingInt(project::getEarliestStart).thenComparingInt(project::getTotalFloat))
                     .ifPresent(activity -> {
                         SortedSet<R> candidateResources = project.getResourcesOfType(project.getResourceType(activity));
                         Span<A> activitySpan = new Span<>(project.getEarliestStart(activity), project.getEarliestFinish(activity), activity);
+                        System.out.println("Activity Span: " + activitySpan);
                         Optional<R> firstAvailableResource = candidateResources.stream()
-                                .filter(r -> project.getResourceOccupiedSpans(r).intersect(activitySpan).isEmpty())
+                                .filter(r -> {
+                                    SpanSet<A> resourceOccupiedSpans = project.getResourceOccupiedSpans(r);
+                                    System.out.println("    " + r + " occupied spans: " + resourceOccupiedSpans);
+                                    return resourceOccupiedSpans.intersect(activitySpan).isEmpty();
+                                })
                                 .findFirst();
+
+//                        if (!firstAvailableResource.isPresent()) {
+//                            firstAvailableResource = candidateResources.stream()
+//                                    .sorted(comparingInt(r -> {
+//                                        SpanSet<A> spans = project.getResourceOccupiedSpans(r);
+//                                        Span<A> span = spans.getSpans().get(spans.getSpans().size() - 1);
+//                                        return span.getEnd();
+//                                    }))
+//                                    .findFirst();
+//                        }
 
                         firstAvailableResource.ifPresent(r -> {
                             System.out.println("Assigning " + r + " to " + activity);
